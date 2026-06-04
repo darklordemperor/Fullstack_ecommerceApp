@@ -1,0 +1,20 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: ecommerce_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  backend:
+    build: ./backend
+    container_name: ecommerce_backend
+    ports:
+      - "8080:8080"
+    env_file: ./backend/.env
+    depends_on:
+      - mongo
+
+volumes:
+  mongo_data:
