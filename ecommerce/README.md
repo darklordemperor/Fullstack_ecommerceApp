@@ -47,6 +47,29 @@ const String baseUrl = 'http://10.0.2.2:8080/api';
 
 For an iOS simulator, use `http://localhost:8080/api`. For a real device, replace the host with your computer's LAN IP address and make sure the device can reach that network.
 
+## Run Tests
+
+Backend unit tests cover register validation and JWT auth middleware behavior without requiring MongoDB:
+
+```bash
+cd backend
+go test ./...
+```
+
+Frontend widget and unit tests cover app startup plus model use cases such as seller authorization flags, product image selection, and cart totals:
+
+```bash
+cd frontend
+flutter pub get
+flutter test
+```
+
+Docker Compose syntax can be checked from the `ecommerce` folder:
+
+```bash
+docker compose config
+```
+
 ## Default Test Credentials
 
 Register a test customer in the app or by calling:

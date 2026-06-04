@@ -97,7 +97,9 @@ func validateRegister(req model.RegisterRequest) map[string]string {
 	if !regexp.MustCompile(`^[a-z0-9]{8,}$`).MatchString(req.Password) {
 		errorsMap["password"] = "password must use lowercase letters and numbers only, min 8 characters"
 	}
-	if req.ConfirmPassword != "" && req.ConfirmPassword != req.Password {
+	if req.ConfirmPassword == "" {
+		errorsMap["confirm_password"] = "confirm password is required"
+	} else if req.ConfirmPassword != req.Password {
 		errorsMap["confirm_password"] = "passwords must match"
 	}
 	return errorsMap
