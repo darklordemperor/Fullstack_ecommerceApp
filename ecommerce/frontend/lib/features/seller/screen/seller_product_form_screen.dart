@@ -51,7 +51,7 @@ class _SellerProductFormScreenState extends ConsumerState<SellerProductFormScree
           const SizedBox(height: 12),
           TextField(controller: stock, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Stock')),
           const SizedBox(height: 12),
-          DropdownButtonFormField<String>(value: category, items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(), onChanged: (v) => setState(() => category = v ?? category), decoration: const InputDecoration(labelText: 'Category')),
+          DropdownButtonFormField<String>(initialValue: category, items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(), onChanged: (v) => setState(() => category = v ?? category), decoration: const InputDecoration(labelText: 'Category')),
           const SizedBox(height: 12),
           for (var i = 0; i < images.length; i++)
             Padding(

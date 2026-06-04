@@ -23,9 +23,11 @@ class DioClient {
         },
         onError: (error, handler) async {
           if (error.response?.statusCode == 401) {
-            await storage.delete(key: 'token');
             final context = rootNavigatorKey.currentContext;
-            if (context != null) context.go('/login');
+            await storage.delete(key: 'token');
+            if (context != null && context.mounted) {
+              context.go('/login');
+            }
           }
           handler.next(error);
         },

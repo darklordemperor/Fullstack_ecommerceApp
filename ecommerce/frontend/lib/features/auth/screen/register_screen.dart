@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../provider/auth_provider.dart';
-import 'login_screen.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -36,9 +35,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                TextFormField(controller: name, decoration: const InputDecoration(labelText: 'Name'), validator: required),
+                TextFormField(controller: name, decoration: const InputDecoration(labelText: 'Name'), validator: _requiredField),
                 const SizedBox(height: 12),
-                TextFormField(controller: lastname, decoration: const InputDecoration(labelText: 'Lastname'), validator: required),
+                TextFormField(controller: lastname, decoration: const InputDecoration(labelText: 'Lastname'), validator: _requiredField),
                 const SizedBox(height: 12),
                 TextFormField(controller: age, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Age'), validator: (v) => (int.tryParse(v ?? '') ?? 0) < 18 ? 'Must be at least 18' : null),
                 const SizedBox(height: 12),
@@ -74,7 +73,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         context.go('/login');
       }
     } on DioException catch (e) {
-      if (mounted) showError(context, e.response?.data['error']?.toString() ?? 'Registration failed');
+      if (mounted) _showError(context, e.response?.data['error']?.toString() ?? 'Registration failed');
     }
   }
+}
+
+String? _requiredField(String? value) {
+  return value == null || value.trim().isEmpty ? 'Required' : null;
+}
+
+void _showError(BuildContext context, String message) {
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
 }

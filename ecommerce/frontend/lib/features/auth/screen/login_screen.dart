@@ -33,9 +33,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               children: [
                 Text('Login', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 20),
-                TextFormField(controller: email, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'Email'), validator: required),
+                TextFormField(controller: email, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'Email'), validator: requiredField),
                 const SizedBox(height: 12),
-                TextFormField(controller: password, obscureText: true, decoration: const InputDecoration(labelText: 'Password'), validator: required),
+                TextFormField(controller: password, obscureText: true, decoration: const InputDecoration(labelText: 'Password'), validator: requiredField),
                 const SizedBox(height: 20),
                 ElevatedButton(onPressed: loading ? null : submit, child: Text(loading ? 'Signing in...' : 'Login')),
                 TextButton(onPressed: () => context.go('/register'), child: const Text("Don't have an account? Register")),
@@ -58,5 +58,5 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 }
 
-String? required(String? value) => value == null || value.trim().isEmpty ? 'Required' : null;
+String? requiredField(String? value) => value == null || value.trim().isEmpty ? 'Required' : null;
 void showError(BuildContext context, String message) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
