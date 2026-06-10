@@ -13,7 +13,7 @@ This repository contains a complete two-part e-commerce project:
 
 ## Run Backend and MongoDB
 
-From the `ecommerce` folder:
+From the project root:
 
 ```bash
 docker-compose up --build
@@ -32,7 +32,7 @@ PORT=8080
 
 ## Run Flutter Locally
 
-From the `ecommerce/frontend` folder:
+From the `frontend` folder:
 
 ```bash
 flutter pub get
@@ -64,7 +64,7 @@ flutter pub get
 flutter test
 ```
 
-Docker Compose syntax can be checked from the `ecommerce` folder:
+Docker Compose syntax can be checked from the project root:
 
 ```bash
 docker compose config
