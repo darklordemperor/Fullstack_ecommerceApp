@@ -41,8 +41,20 @@ void main() {
       final cart = CartModel.fromJson({
         'id': 'cart1',
         'items': [
-          {'product_id': 'p1', 'name': 'Keyboard', 'price': 1200.0, 'image': 'https://example.com/k.png', 'quantity': 2},
-          {'product_id': 'p2', 'name': 'Mouse', 'price': 450.5, 'image': 'https://example.com/m.png', 'quantity': 1},
+          {
+            'product_id': 'p1',
+            'name': 'Keyboard',
+            'price': 1200.0,
+            'image': 'https://example.com/k.png',
+            'quantity': 2
+          },
+          {
+            'product_id': 'p2',
+            'name': 'Mouse',
+            'price': 450.5,
+            'image': 'https://example.com/m.png',
+            'quantity': 1
+          },
         ],
       });
 
@@ -71,14 +83,18 @@ void main() {
         'price': 799.0,
         'stock': 8,
         'category': 'Fashion',
-        'images': ['https://example.com/main.png', 'https://example.com/alt.png'],
+        'images': [
+          'https://example.com/main.png',
+          'https://example.com/alt.png'
+        ],
       });
 
       expect(product.mainImage, 'https://example.com/main.png');
       expect(product.toRequest()['category'], 'Fashion');
     });
 
-    test('falls back to deterministic image URL when product has no images', () {
+    test('falls back to deterministic image URL when product has no images',
+        () {
       final product = ProductModel.fromJson({
         'id': 'p2',
         'seller_id': 's1',

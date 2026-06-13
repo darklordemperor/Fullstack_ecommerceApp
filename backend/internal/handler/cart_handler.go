@@ -12,10 +12,12 @@ import (
 type CartHandler struct {
 	carts    *repository.CartRepository
 	products *repository.ProductRepository
+	users    *repository.UserRepository
+	orders   *repository.OrderRepository
 }
 
-func NewCartHandler(carts *repository.CartRepository, products *repository.ProductRepository) *CartHandler {
-	return &CartHandler{carts: carts, products: products}
+func NewCartHandler(carts *repository.CartRepository, products *repository.ProductRepository, users *repository.UserRepository, orders *repository.OrderRepository) *CartHandler {
+	return &CartHandler{carts: carts, products: products, users: users, orders: orders}
 }
 
 func (h *CartHandler) Get(c *gin.Context) {
@@ -116,6 +118,109 @@ func (h *CartHandler) Clear(c *gin.Context) {
 	h.saveCart(c, cart, "cart cleared")
 }
 
+func (h *CartHandler) Checkout(c *gin.Context) {
+	userID := c.MustGet("user_id").(bson.ObjectID)
+	user, err := h.users.FindByID(c.Request.Context(), userID)
+	if err != nil || user == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load customer"})
+		return
+	}
+	cart, err := h.carts.Get(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load cart"})
+		return
+	}
+	if len(cart.Items) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cart is empty"})
+		return
+	}
+
+	grouped := map[bson.ObjectID][]model.CartItem{}
+	for _, item := range cart.Items {
+		product, err := h.products.FindByID(c.Request.Context(), item.ProductID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load product"})
+			return
+		}
+		if product == nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "one product in your cart is no longer available"})
+			return
+		}
+		grouped[product.SellerID] = append(grouped[product.SellerID], item)
+	}
+
+	orders := make([]model.Order, 0, len(grouped))
+	for sellerID, items := range grouped {
+		total := 0.0
+		for _, item := range items {
+			total += item.Price * float64(item.Quantity)
+		}
+		orders = append(orders, model.Order{
+			CustomerID:   userID,
+			CustomerName: user.Name + " " + user.Lastname,
+			SellerID:     sellerID,
+			Items:        items,
+			Total:        total,
+			Status:       "paid",
+		})
+	}
+	if err := h.orders.CreateMany(c.Request.Context(), orders); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create order"})
+		return
+	}
+	cart.Items = []model.CartItem{}
+	if err := h.carts.Save(c.Request.Context(), cart); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to clear cart"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": gin.H{"orders_created": len(orders), "cart": cart}, "message": "checkout complete"})
+}
+
+func (h *CartHandler) BuyNow(c *gin.Context) {
+	var req model.CartQuantityRequest
+	if !bindCartQuantity(c, &req) {
+		return
+	}
+	userID := c.MustGet("user_id").(bson.ObjectID)
+	user, err := h.users.FindByID(c.Request.Context(), userID)
+	if err != nil || user == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load customer"})
+		return
+	}
+	productID, _ := bson.ObjectIDFromHex(req.ProductID)
+	product, err := h.products.FindByID(c.Request.Context(), productID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load product"})
+		return
+	}
+	if product == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "product not found"})
+		return
+	}
+	if req.Quantity > product.Stock {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "quantity is greater than available stock"})
+		return
+	}
+	image := ""
+	if len(product.Images) > 0 {
+		image = product.Images[0]
+	}
+	item := model.CartItem{ProductID: productID, Name: product.Name, Price: product.Price, Image: image, Quantity: req.Quantity}
+	order := model.Order{
+		CustomerID:   userID,
+		CustomerName: user.Name + " " + user.Lastname,
+		SellerID:     product.SellerID,
+		Items:        []model.CartItem{item},
+		Total:        item.Price * float64(item.Quantity),
+		Status:       "paid",
+	}
+	if err := h.orders.CreateMany(c.Request.Context(), []model.Order{order}); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create order"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": gin.H{"orders_created": 1}, "message": "checkout complete"})
+}
+
 func (h *CartHandler) saveCart(c *gin.Context, cart *model.Cart, message string) {
 	if err := h.carts.Save(c.Request.Context(), cart); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save cart"})
@@ -129,8 +234,8 @@ func bindCartQuantity(c *gin.Context, req *model.CartQuantityRequest) bool {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return false
 	}
-	if _, err := bson.ObjectIDFromHex(req.ProductID); err != nil || req.Quantity < 1 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "valid product_id and quantity >= 1 are required"})
+	if _, err := bson.ObjectIDFromHex(req.ProductID); err != nil || req.Quantity < 1 || req.Quantity > 99 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "valid product_id and quantity 1-99 are required"})
 		return false
 	}
 	return true

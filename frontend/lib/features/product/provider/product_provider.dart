@@ -9,9 +9,11 @@ final searchProvider = StateProvider<String>((ref) => '');
 
 final productsProvider = FutureProvider<List<ProductModel>>((ref) {
   final repo = ref.watch(productRepositoryProvider);
-  return repo.list(category: ref.watch(categoryProvider), search: ref.watch(searchProvider));
+  return repo.list(
+      category: ref.watch(categoryProvider), search: ref.watch(searchProvider));
 });
 
-final productDetailProvider = FutureProvider.family<ProductModel, String>((ref, id) {
+final productDetailProvider =
+    FutureProvider.family<ProductModel, String>((ref, id) {
   return ref.watch(productRepositoryProvider).detail(id);
 });

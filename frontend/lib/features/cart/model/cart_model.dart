@@ -33,6 +33,8 @@ class CartModel {
   factory CartModel.empty() => const CartModel(id: '', items: []);
   factory CartModel.fromJson(Map<String, dynamic> json) => CartModel(
         id: json['id'] ?? '',
-        items: (json['items'] as List? ?? const []).map((e) => CartItemModel.fromJson(e)).toList(),
+        items: (json['items'] as List? ?? const [])
+            .map((e) => CartItemModel.fromJson(e))
+            .toList(),
       );
 }

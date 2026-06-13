@@ -57,6 +57,19 @@ func (r *ProductRepository) FindAll(ctx context.Context, category, search string
 	return products, nil
 }
 
+func (r *ProductRepository) FindAllAdmin(ctx context.Context) ([]model.Product, error) {
+	cursor, err := r.collection.Find(ctx, bson.M{}, options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}}))
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+	var products []model.Product
+	if err := cursor.All(ctx, &products); err != nil {
+		return nil, err
+	}
+	return products, nil
+}
+
 func (r *ProductRepository) FindByID(ctx context.Context, id bson.ObjectID) (*model.Product, error) {
 	var product model.Product
 	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&product)
@@ -89,5 +102,10 @@ func (r *ProductRepository) Update(ctx context.Context, id, sellerID bson.Object
 
 func (r *ProductRepository) Delete(ctx context.Context, id, sellerID bson.ObjectID) (bool, error) {
 	result, err := r.collection.DeleteOne(ctx, bson.M{"_id": id, "seller_id": sellerID})
+	return result.DeletedCount > 0, err
+}
+
+func (r *ProductRepository) DeleteAny(ctx context.Context, id bson.ObjectID) (bool, error) {
+	result, err := r.collection.DeleteOne(ctx, bson.M{"_id": id})
 	return result.DeletedCount > 0, err
 }

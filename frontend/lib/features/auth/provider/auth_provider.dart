@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/dio/dio_client.dart';
@@ -9,9 +10,15 @@ import '../repository/auth_repository.dart';
 final authRepositoryProvider = Provider((ref) => AuthRepository());
 
 class AuthState {
-  const AuthState({this.user, this.loading = false});
+  const AuthState(
+      {this.user,
+      this.loading = false,
+      this.bootstrapped = false,
+      this.message});
   final UserModel? user;
   final bool loading;
+  final bool bootstrapped;
+  final String? message;
   bool get isLoggedIn => user != null;
 }
 
@@ -21,43 +28,78 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> bootstrap() async {
     final token = await DioClient.storage.read(key: 'token');
-    if (token == null) return;
+    final storedMessage = await DioClient.storage.read(key: 'auth_message');
+    if (storedMessage != null) {
+      await DioClient.storage.delete(key: 'auth_message');
+    }
+    if (token == null) {
+      state = AuthState(bootstrapped: true, message: storedMessage);
+      return;
+    }
+    if (isTokenExpired(token)) {
+      await DioClient.storage.delete(key: 'token');
+      state = const AuthState(
+          bootstrapped: true,
+          message: 'Your session expired. Please sign in again.');
+      return;
+    }
     try {
       final user = await repository.me();
-      state = AuthState(user: user);
-    } catch (_) {
+      state = AuthState(user: user, bootstrapped: true);
+    } catch (error) {
+      debugPrint('Auth bootstrap failed: $error');
       await DioClient.storage.delete(key: 'token');
-      state = const AuthState();
+      state = const AuthState(
+          bootstrapped: true,
+          message: 'We could not restore your session. Please sign in again.');
     }
   }
 
   Future<void> login(String email, String password) async {
-    state = AuthState(user: state.user, loading: true);
+    state = AuthState(
+        user: state.user, loading: true, bootstrapped: state.bootstrapped);
     final result = await repository.login(email, password);
     await DioClient.storage.write(key: 'token', value: result.token);
-    state = AuthState(user: result.user);
+    state = AuthState(user: result.user, bootstrapped: true);
   }
 
   Future<void> register(Map<String, dynamic> body) async {
-    state = AuthState(user: state.user, loading: true);
+    state = AuthState(
+        user: state.user, loading: true, bootstrapped: state.bootstrapped);
     await repository.register(body);
-    state = const AuthState();
+    state = const AuthState(bootstrapped: true);
   }
 
   Future<void> refreshMe() async {
-    state = AuthState(user: await repository.me());
+    state = AuthState(user: await repository.me(), bootstrapped: true);
   }
 
-  Future<void> logout() async {
+  Future<void> logout({String? message}) async {
     await DioClient.storage.delete(key: 'token');
-    state = const AuthState();
+    state = AuthState(bootstrapped: true, message: message);
   }
 
   List<String> rolesFromToken(String token) {
     final parts = token.split('.');
     if (parts.length != 3) return const [];
-    final payload = utf8.decode(base64Url.decode(base64Url.normalize(parts[1])));
+    final payload =
+        utf8.decode(base64Url.decode(base64Url.normalize(parts[1])));
     return List<String>.from(jsonDecode(payload)['role'] ?? const []);
+  }
+
+  bool isTokenExpired(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return true;
+      final payload =
+          utf8.decode(base64Url.decode(base64Url.normalize(parts[1])));
+      final exp = jsonDecode(payload)['exp'];
+      if (exp is! num) return true;
+      return DateTime.now().millisecondsSinceEpoch >= exp.toInt() * 1000;
+    } catch (error) {
+      debugPrint('Token decode failed: $error');
+      return true;
+    }
   }
 }
 

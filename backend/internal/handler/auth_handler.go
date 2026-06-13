@@ -47,7 +47,8 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	}
 	user := &model.User{
 		Name: strings.TrimSpace(req.Name), Lastname: strings.TrimSpace(req.Lastname),
-		Age: req.Age, Email: strings.ToLower(strings.TrimSpace(req.Email)),
+		Age: req.Age, Gender: strings.TrimSpace(req.Gender), Address: strings.TrimSpace(req.Address),
+		ProfileImage: strings.TrimSpace(req.ProfileImage), Email: strings.ToLower(strings.TrimSpace(req.Email)),
 		Password: string(hash), Role: []string{"customer"},
 	}
 	if err := h.users.Create(c.Request.Context(), user); err != nil {
@@ -72,6 +73,10 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid email or password"})
 		return
 	}
+	if user.Banned {
+		c.JSON(http.StatusForbidden, gin.H{"error": "this account has been banned"})
+		return
+	}
 	token, err := middleware.GenerateToken(h.jwtSecret, user.ID.Hex(), user.Email, user.Role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
@@ -90,6 +95,12 @@ func validateRegister(req model.RegisterRequest) map[string]string {
 	}
 	if req.Age < 18 {
 		errorsMap["age"] = "age must be at least 18"
+	}
+	if strings.TrimSpace(req.Gender) == "" {
+		errorsMap["gender"] = "gender is required"
+	}
+	if strings.TrimSpace(req.Address) == "" {
+		errorsMap["address"] = "address is required"
 	}
 	if !regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`).MatchString(strings.TrimSpace(req.Email)) {
 		errorsMap["email"] = "valid email is required"

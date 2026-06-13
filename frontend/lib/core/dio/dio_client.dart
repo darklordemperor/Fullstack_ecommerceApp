@@ -25,6 +25,9 @@ class DioClient {
           if (error.response?.statusCode == 401) {
             final context = rootNavigatorKey.currentContext;
             await storage.delete(key: 'token');
+            await storage.write(
+                key: 'auth_message',
+                value: 'Your session expired. Please sign in again.');
             if (context != null && context.mounted) {
               context.go('/login');
             }

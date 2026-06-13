@@ -47,9 +47,28 @@ func (r *UserRepository) FindByID(ctx context.Context, id bson.ObjectID) (*model
 	return &user, err
 }
 
+func (r *UserRepository) FindAll(ctx context.Context) ([]model.User, error) {
+	cursor, err := r.collection.Find(ctx, bson.M{}, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+	var users []model.User
+	if err := cursor.All(ctx, &users); err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+func (r *UserRepository) SetBanned(ctx context.Context, id bson.ObjectID, banned bool) error {
+	_, err := r.collection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"banned": banned}})
+	return err
+}
+
 func (r *UserRepository) UpdateProfile(ctx context.Context, id bson.ObjectID, req model.UpdateProfileRequest) error {
 	_, err := r.collection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{
 		"name": req.Name, "lastname": req.Lastname, "age": req.Age,
+		"gender": req.Gender, "address": req.Address, "profile_image": req.ProfileImage,
 	}})
 	return err
 }

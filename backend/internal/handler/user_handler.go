@@ -37,10 +37,15 @@ func (h *UserHandler) UpdateMe(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
-	if strings.TrimSpace(req.Name) == "" || strings.TrimSpace(req.Lastname) == "" || req.Age < 18 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "name, lastname, and age >= 18 are required"})
+	if strings.TrimSpace(req.Name) == "" || strings.TrimSpace(req.Lastname) == "" || req.Age < 18 || strings.TrimSpace(req.Gender) == "" || strings.TrimSpace(req.Address) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "name, lastname, age >= 18, gender, and address are required"})
 		return
 	}
+	req.Name = strings.TrimSpace(req.Name)
+	req.Lastname = strings.TrimSpace(req.Lastname)
+	req.Gender = strings.TrimSpace(req.Gender)
+	req.Address = strings.TrimSpace(req.Address)
+	req.ProfileImage = strings.TrimSpace(req.ProfileImage)
 	if err := h.users.UpdateProfile(c.Request.Context(), c.MustGet("user_id").(bson.ObjectID), req); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update profile"})
 		return

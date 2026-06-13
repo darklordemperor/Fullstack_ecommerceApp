@@ -19,6 +19,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(authProvider.select((state) => state.message), (previous, next) {
+      if (next != null && next != previous) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(next)));
+      }
+    });
     final loading = ref.watch(authProvider).loading;
     return Scaffold(
       appBar: AppBar(title: const Text('ShopApp')),
@@ -31,14 +37,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               padding: const EdgeInsets.all(20),
               shrinkWrap: true,
               children: [
-                Text('Login', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
+                Text('Login',
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineMedium
+                        ?.copyWith(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 20),
-                TextFormField(controller: email, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'Email'), validator: requiredField),
+                TextFormField(
+                    controller: email,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(labelText: 'Email'),
+                    validator: requiredField),
                 const SizedBox(height: 12),
-                TextFormField(controller: password, obscureText: true, decoration: const InputDecoration(labelText: 'Password'), validator: requiredField),
+                TextFormField(
+                    controller: password,
+                    obscureText: true,
+                    decoration: const InputDecoration(labelText: 'Password'),
+                    validator: requiredField),
                 const SizedBox(height: 20),
-                ElevatedButton(onPressed: loading ? null : submit, child: Text(loading ? 'Signing in...' : 'Login')),
-                TextButton(onPressed: () => context.go('/register'), child: const Text("Don't have an account? Register")),
+                ElevatedButton(
+                    onPressed: loading ? null : submit,
+                    child: Text(loading ? 'Signing in...' : 'Login')),
+                TextButton(
+                    onPressed: () => context.go('/register'),
+                    child: const Text("Don't have an account? Register")),
               ],
             ),
           ),
@@ -50,13 +72,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> submit() async {
     if (!formKey.currentState!.validate()) return;
     try {
-      await ref.read(authProvider.notifier).login(email.text.trim(), password.text);
+      await ref
+          .read(authProvider.notifier)
+          .login(email.text.trim(), password.text);
       if (mounted) context.go('/home');
     } on DioException catch (e) {
-      if (mounted) showError(context, e.response?.data['error']?.toString() ?? 'Login failed');
+      if (mounted) {
+        showError(
+            context, e.response?.data['error']?.toString() ?? 'Login failed');
+      }
     }
   }
 }
 
-String? requiredField(String? value) => value == null || value.trim().isEmpty ? 'Required' : null;
-void showError(BuildContext context, String message) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+String? requiredField(String? value) =>
+    value == null || value.trim().isEmpty ? 'Required' : null;
+void showError(BuildContext context, String message) =>
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));

@@ -129,8 +129,8 @@ func bindProduct(c *gin.Context, req *model.ProductRequest) bool {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return false
 	}
-	if strings.TrimSpace(req.Name) == "" || strings.TrimSpace(req.Description) == "" || req.Price <= 0 || req.Stock < 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "name, description, positive price, and stock are required"})
+	if strings.TrimSpace(req.Name) == "" || strings.TrimSpace(req.Description) == "" || req.Price <= 0 || req.Price > 1000000 || req.Stock < 0 || req.Stock > 99 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "name, description, price 1-1,000,000, and stock 0-99 are required"})
 		return false
 	}
 	if req.Images == nil {

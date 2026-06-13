@@ -11,12 +11,17 @@ final sellerStatsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
 
 final sellerProductsProvider = FutureProvider<List<ProductModel>>((ref) async {
   final response = await DioClient.dio.get('/seller/products');
-  return (DioClient.payload(response) as List).map((e) => ProductModel.fromJson(e)).toList();
+  final data = DioClient.payload(response) as List? ?? const [];
+  return data
+      .map((e) => ProductModel.fromJson(Map<String, dynamic>.from(e)))
+      .toList();
 });
 
-final sellerOrdersProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+final sellerOrdersProvider =
+    FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final response = await DioClient.dio.get('/seller/orders');
-  return (DioClient.payload(response) as List).map((e) => Map<String, dynamic>.from(e)).toList();
+  final data = DioClient.payload(response) as List? ?? const [];
+  return data.map((e) => Map<String, dynamic>.from(e)).toList();
 });
 
 Future<void> refreshSeller(WidgetRef ref) async {

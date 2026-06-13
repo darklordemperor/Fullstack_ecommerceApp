@@ -11,7 +11,9 @@ func TestValidateRegisterAcceptsValidCustomer(t *testing.T) {
 		Name:            "Ada",
 		Lastname:        "Lovelace",
 		Age:             28,
+		Gender:          "Other",
 		Email:           "ada@example.com",
+		Address:         "Bangkok, Thailand",
 		Password:        "abc12345",
 		ConfirmPassword: "abc12345",
 	}

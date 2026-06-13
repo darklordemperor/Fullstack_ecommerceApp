@@ -61,6 +61,12 @@ func Auth(secret string) gin.HandlerFunc {
 
 func RequireRole(role string, users *repository.UserRepository) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		userID := c.MustGet("user_id").(bson.ObjectID)
+		user, err := users.FindByID(c.Request.Context(), userID)
+		if err != nil || user == nil || user.Banned {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "account is not allowed to perform this action"})
+			return
+		}
 		roles, _ := c.Get("role")
 		roleList, _ := roles.([]string)
 		if !contains(roleList, role) {
@@ -68,8 +74,6 @@ func RequireRole(role string, users *repository.UserRepository) gin.HandlerFunc 
 			return
 		}
 		if role == "seller" {
-			userID := c.MustGet("user_id").(bson.ObjectID)
-			user, err := users.FindByID(c.Request.Context(), userID)
 			if err != nil || user == nil || user.SellerStatus != "approved" {
 				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "seller approval required"})
 				return

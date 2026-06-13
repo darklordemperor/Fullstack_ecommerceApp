@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/widget/app_ui.dart';
 import '../provider/auth_provider.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -17,16 +18,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final name = TextEditingController();
   final lastname = TextEditingController();
   final age = TextEditingController();
+  final address = TextEditingController();
   final email = TextEditingController();
   final password = TextEditingController();
   final confirm = TextEditingController();
   final passwordRegex = RegExp(r'^[a-z0-9]{8,}$');
+  String gender = 'Other';
 
   @override
   Widget build(BuildContext context) {
     final loading = ref.watch(authProvider).loading;
     return Scaffold(
-      appBar: AppBar(title: const Text('Register')),
+      appBar: AppBar(
+          leading: const AppBackButton(fallback: '/login'),
+          title: const Text('Register')),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 460),
@@ -35,20 +40,76 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                TextFormField(controller: name, decoration: const InputDecoration(labelText: 'Name'), validator: _requiredField),
+                TextFormField(
+                    controller: name,
+                    decoration: const InputDecoration(labelText: 'Name'),
+                    validator: _requiredField),
                 const SizedBox(height: 12),
-                TextFormField(controller: lastname, decoration: const InputDecoration(labelText: 'Lastname'), validator: _requiredField),
+                TextFormField(
+                    controller: lastname,
+                    decoration: const InputDecoration(labelText: 'Lastname'),
+                    validator: _requiredField),
                 const SizedBox(height: 12),
-                TextFormField(controller: age, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Age'), validator: (v) => (int.tryParse(v ?? '') ?? 0) < 18 ? 'Must be at least 18' : null),
+                TextFormField(
+                    controller: age,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Age'),
+                    validator: (v) => (int.tryParse(v ?? '') ?? 0) < 18
+                        ? 'Must be at least 18'
+                        : null),
                 const SizedBox(height: 12),
-                TextFormField(controller: email, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'Email'), validator: (v) => (v ?? '').contains('@') ? null : 'Valid email required'),
+                DropdownButtonFormField<String>(
+                  initialValue: gender,
+                  decoration: const InputDecoration(labelText: 'Gender'),
+                  items: const ['Female', 'Male', 'Other']
+                      .map((value) =>
+                          DropdownMenuItem(value: value, child: Text(value)))
+                      .toList(),
+                  onChanged: (value) =>
+                      setState(() => gender = value ?? gender),
+                ),
                 const SizedBox(height: 12),
-                TextFormField(controller: password, obscureText: true, decoration: const InputDecoration(labelText: 'Password', helperText: 'Lowercase letters and numbers only, min 8 characters'), validator: (v) => passwordRegex.hasMatch(v ?? '') ? null : 'Invalid password'),
+                TextFormField(
+                    controller: address,
+                    minLines: 2,
+                    maxLines: 3,
+                    decoration:
+                        const InputDecoration(labelText: 'Delivery address'),
+                    validator: _requiredField),
                 const SizedBox(height: 12),
-                TextFormField(controller: confirm, obscureText: true, decoration: const InputDecoration(labelText: 'Confirm Password'), validator: (v) => v == password.text ? null : 'Passwords must match'),
+                TextFormField(
+                    controller: email,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(labelText: 'Email'),
+                    validator: (v) => (v ?? '').contains('@')
+                        ? null
+                        : 'Valid email required'),
+                const SizedBox(height: 12),
+                TextFormField(
+                    controller: password,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                        labelText: 'Password',
+                        helperText:
+                            'Lowercase letters and numbers only, min 8 characters'),
+                    validator: (v) => passwordRegex.hasMatch(v ?? '')
+                        ? null
+                        : 'Invalid password'),
+                const SizedBox(height: 12),
+                TextFormField(
+                    controller: confirm,
+                    obscureText: true,
+                    decoration:
+                        const InputDecoration(labelText: 'Confirm Password'),
+                    validator: (v) =>
+                        v == password.text ? null : 'Passwords must match'),
                 const SizedBox(height: 20),
-                ElevatedButton(onPressed: loading ? null : submit, child: Text(loading ? 'Creating...' : 'Register')),
-                TextButton(onPressed: () => context.go('/login'), child: const Text('Already have an account? Login')),
+                ElevatedButton(
+                    onPressed: loading ? null : submit,
+                    child: Text(loading ? 'Creating...' : 'Register')),
+                TextButton(
+                    onPressed: () => context.go('/login'),
+                    child: const Text('Already have an account? Login')),
               ],
             ),
           ),
@@ -64,16 +125,23 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         'name': name.text.trim(),
         'lastname': lastname.text.trim(),
         'age': int.parse(age.text),
+        'gender': gender,
+        'address': address.text.trim(),
+        'profile_image': '',
         'email': email.text.trim(),
         'password': password.text,
         'confirm_password': confirm.text,
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Account created. Please log in.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Account created. Please log in.')));
         context.go('/login');
       }
     } on DioException catch (e) {
-      if (mounted) _showError(context, e.response?.data['error']?.toString() ?? 'Registration failed');
+      if (mounted) {
+        _showError(context,
+            e.response?.data['error']?.toString() ?? 'Registration failed');
+      }
     }
   }
 }

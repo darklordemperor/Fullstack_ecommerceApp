@@ -21,7 +21,8 @@ class ProductModel {
   final String category;
   final List<String> images;
 
-  String get mainImage => images.isEmpty ? 'https://picsum.photos/seed/$id/600' : images.first;
+  String get mainImage =>
+      images.isEmpty ? 'https://picsum.photos/seed/$id/600' : images.first;
 
   factory ProductModel.fromJson(Map<String, dynamic> json) => ProductModel(
         id: json['id'] ?? '',
@@ -29,10 +30,13 @@ class ProductModel {
         sellerName: json['seller_name'] ?? '',
         name: json['name'] ?? '',
         description: json['description'] ?? '',
-        price: (json['price'] ?? 0).toDouble(),
-        stock: json['stock'] ?? 0,
+        price: (json['price'] as num? ?? 0).toDouble(),
+        stock: (json['stock'] as num? ?? 0).toInt(),
         category: json['category'] ?? '',
-        images: List<String>.from(json['images'] ?? const []),
+        images: (json['images'] as List? ?? const [])
+            .map((image) => image.toString())
+            .where((image) => image.isNotEmpty)
+            .toList(),
       );
 
   Map<String, dynamic> toRequest() => {

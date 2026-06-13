@@ -2,14 +2,18 @@ import '../../../core/dio/dio_client.dart';
 import '../model/product_model.dart';
 
 class ProductRepository {
-  Future<List<ProductModel>> list({String? category, String? search, int page = 1, int limit = 20}) async {
+  Future<List<ProductModel>> list(
+      {String? category, String? search, int page = 1, int limit = 20}) async {
     final response = await DioClient.dio.get('/products', queryParameters: {
       if (category != null && category != 'All') 'category': category,
       if (search != null && search.isNotEmpty) 'search': search,
       'page': page,
       'limit': limit,
     });
-    return (DioClient.payload(response) as List).map((e) => ProductModel.fromJson(e)).toList();
+    final data = DioClient.payload(response) as List? ?? const [];
+    return data
+        .map((e) => ProductModel.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
   }
 
   Future<ProductModel> detail(String id) async {
