@@ -31,8 +31,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       bottomNavigationBar: product.valueOrNull == null
           ? null
           : SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  border: const Border(
+                    top: BorderSide(color: AppTheme.line),
+                  ),
+                ),
                 child: Row(
                   children: [
                     Expanded(
@@ -71,12 +77,18 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           final images = item.images.isEmpty ? [item.mainImage] : item.images;
           return ListView(
             children: [
-              AspectRatio(
-                aspectRatio: 16 / 9,
-                child: PageView.builder(
-                  itemCount: images.length,
-                  onPageChanged: (value) => setState(() => page = value),
-                  itemBuilder: (_, i) => AppProductImage(image: images[i]),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: AspectRatio(
+                    aspectRatio: 4 / 3,
+                    child: PageView.builder(
+                      itemCount: images.length,
+                      onPageChanged: (value) => setState(() => page = value),
+                      itemBuilder: (_, i) => AppProductImage(image: images[i]),
+                    ),
+                  ),
                 ),
               ),
               Row(
@@ -96,7 +108,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -116,33 +128,64 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                               color: AppTheme.primary,
                               fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        CircleAvatar(
-                            child: Text(item.sellerName.isNotEmpty
-                                ? item.sellerName[0].toUpperCase()
-                                : 'S')),
-                        const SizedBox(width: 8),
-                        Expanded(child: Text(item.sellerName)),
-                        Chip(label: Text('Stock ${item.stock}')),
-                      ],
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: AppTheme.line),
+                      ),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                              backgroundColor:
+                                  AppTheme.primary.withValues(alpha: .12),
+                              child: Text(
+                                item.sellerName.isNotEmpty
+                                    ? item.sellerName[0].toUpperCase()
+                                    : 'S',
+                                style: const TextStyle(
+                                    color: AppTheme.primaryDark),
+                              )),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(item.sellerName,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w800)),
+                          ),
+                          Chip(label: Text('Stock ${item.stock}')),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     Row(
                       children: [
-                        IconButton(
-                            onPressed: quantity > 1
-                                ? () => setState(() => quantity--)
-                                : null,
-                            icon: const Icon(Icons.remove_circle_outline)),
-                        Text('$quantity',
-                            style: Theme.of(context).textTheme.titleLarge),
-                        IconButton(
-                            onPressed: quantity < item.stock && quantity < 99
-                                ? () => setState(() => quantity++)
-                                : null,
-                            icon: const Icon(Icons.add_circle_outline)),
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppTheme.line),
+                          ),
+                          child: Row(
+                            children: [
+                              IconButton(
+                                  onPressed: quantity > 1
+                                      ? () => setState(() => quantity--)
+                                      : null,
+                                  icon: const Icon(Icons.remove_rounded)),
+                              Text('$quantity',
+                                  style:
+                                      Theme.of(context).textTheme.titleLarge),
+                              IconButton(
+                                  onPressed:
+                                      quantity < item.stock && quantity < 99
+                                          ? () => setState(() => quantity++)
+                                          : null,
+                                  icon: const Icon(Icons.add_rounded)),
+                            ],
+                          ),
+                        ),
                         const Spacer(),
                         Chip(label: Text(item.category)),
                       ],

@@ -16,7 +16,7 @@ class AppBackButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return IconButton(
       tooltip: 'Back',
-      icon: const Icon(Icons.arrow_back),
+      icon: const Icon(Icons.arrow_back_rounded),
       onPressed: () => goBack(context, fallback: fallback),
     );
   }
@@ -171,10 +171,10 @@ class _ImageFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.grey.shade100,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       alignment: Alignment.center,
-      child:
-          Icon(Icons.image_not_supported_outlined, color: Colors.grey.shade500),
+      child: Icon(Icons.image_not_supported_outlined,
+          color: Theme.of(context).colorScheme.onSurfaceVariant),
     );
   }
 }
