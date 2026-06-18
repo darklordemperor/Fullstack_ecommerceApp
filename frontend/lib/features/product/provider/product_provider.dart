@@ -17,3 +17,10 @@ final productDetailProvider =
     FutureProvider.family<ProductModel, String>((ref, id) {
   return ref.watch(productRepositoryProvider).detail(id);
 });
+
+void refreshProductCaches(dynamic ref, {String? productId}) {
+  ref.invalidate(productsProvider);
+  if (productId != null && productId.isNotEmpty) {
+    ref.invalidate(productDetailProvider(productId));
+  }
+}

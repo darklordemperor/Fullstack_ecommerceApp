@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/settings/app_settings.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/router/app_router.dart';
 import '../provider/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -43,11 +45,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const Icon(Icons.shopping_bag_rounded,
                         color: AppTheme.primary, size: 42),
                     const SizedBox(height: 14),
-                    Text('Welcome back',
+                    Text(tr(ref, 'Welcome back', 'ยินดีต้อนรับกลับ'),
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.headlineMedium),
                     const SizedBox(height: 6),
-                    Text('Sign in to continue shopping.',
+                    Text(
+                        tr(ref, 'Sign in to continue shopping.',
+                            'เข้าสู่ระบบเพื่อเลือกซื้อสินค้าต่อ'),
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: AppTheme.subtext,
@@ -56,25 +60,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     TextFormField(
                         controller: email,
                         keyboardType: TextInputType.emailAddress,
-                        decoration: const InputDecoration(
-                            labelText: 'Email',
-                            prefixIcon: Icon(Icons.mail_outline_rounded)),
-                        validator: requiredField),
+                        decoration: InputDecoration(
+                            labelText: tr(ref, 'Email', 'อีเมล'),
+                            prefixIcon: const Icon(Icons.mail_outline_rounded)),
+                        validator: (value) => requiredField(
+                            value, tr(ref, 'Required', 'จำเป็นต้องกรอก'))),
                     const SizedBox(height: 12),
                     TextFormField(
                         controller: password,
                         obscureText: true,
-                        decoration: const InputDecoration(
-                            labelText: 'Password',
-                            prefixIcon: Icon(Icons.lock_outline_rounded)),
-                        validator: requiredField),
+                        decoration: InputDecoration(
+                            labelText: tr(ref, 'Password', 'รหัสผ่าน'),
+                            prefixIcon: const Icon(Icons.lock_outline_rounded)),
+                        validator: (value) => requiredField(
+                            value, tr(ref, 'Required', 'จำเป็นต้องกรอก'))),
                     const SizedBox(height: 20),
                     ElevatedButton(
                         onPressed: loading ? null : submit,
-                        child: Text(loading ? 'Signing in...' : 'Login')),
+                        child: Text(loading
+                            ? tr(ref, 'Signing in...', 'กำลังเข้าสู่ระบบ...')
+                            : tr(ref, 'Login', 'เข้าสู่ระบบ'))),
                     TextButton(
                         onPressed: () => context.go('/register'),
-                        child: const Text("Don't have an account? Register")),
+                        child: Text(tr(ref, "Don't have an account? Register",
+                            'ยังไม่มีบัญชี? สมัครสมาชิก'))),
                   ],
                 ),
               ),
@@ -91,18 +100,41 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       await ref
           .read(authProvider.notifier)
           .login(email.text.trim(), password.text);
-      if (mounted) context.go('/home');
+      if (mounted) {
+        final next = GoRouterState.of(context).uri.queryParameters['next'];
+        context.go(postLoginLocation(next));
+      }
     } on DioException catch (e) {
       if (mounted) {
         showError(
-            context, e.response?.data['error']?.toString() ?? 'Login failed');
+            context,
+            loginErrorMessage(e,
+                thai: ref.read(appSettingsProvider).languageCode == 'th'));
       }
     }
   }
 }
 
-String? requiredField(String? value) =>
-    value == null || value.trim().isEmpty ? 'Required' : null;
+String loginErrorMessage(DioException error, {bool thai = false}) {
+  switch (error.type) {
+    case DioExceptionType.connectionTimeout:
+    case DioExceptionType.sendTimeout:
+    case DioExceptionType.receiveTimeout:
+    case DioExceptionType.connectionError:
+      return thai
+          ? 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองอีกครั้ง'
+          : 'Cannot connect to the server. Please try again.';
+    default:
+      final data = error.response?.data;
+      if (data is Map && data['error'] != null) {
+        return data['error'].toString();
+      }
+      return thai ? 'เข้าสู่ระบบไม่สำเร็จ' : 'Login failed';
+  }
+}
+
+String? requiredField(String? value, [String message = 'Required']) =>
+    value == null || value.trim().isEmpty ? message : null;
 void showError(BuildContext context, String message) =>
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(message)));

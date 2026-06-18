@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/settings/app_settings.dart';
 import '../../../core/widget/app_ui.dart';
 import '../../auth/provider/auth_provider.dart';
 
@@ -21,22 +22,28 @@ class _SellerApplyScreenState extends ConsumerState<SellerApplyScreen> {
     return Scaffold(
       appBar: AppBar(
           leading: const AppBackButton(fallback: '/profile'),
-          title: const Text('Apply as Seller')),
+          title: Text(tr(ref, 'Apply as Seller', 'สมัครเป็นผู้ขาย'))),
       body: ListView(padding: const EdgeInsets.all(16), children: [
         TextField(
             controller: shop,
-            decoration: const InputDecoration(labelText: 'Shop Name')),
+            decoration:
+                InputDecoration(labelText: tr(ref, 'Shop Name', 'ชื่อร้าน'))),
         const SizedBox(height: 12),
         TextField(
             controller: location,
-            decoration: const InputDecoration(labelText: 'Shop Location')),
+            decoration: InputDecoration(
+                labelText: tr(ref, 'Shop Location', 'ที่ตั้งร้าน'))),
         const SizedBox(height: 12),
         TextField(
             controller: tax,
-            decoration: const InputDecoration(labelText: 'Tax Payer Number')),
+            decoration: InputDecoration(
+                labelText:
+                    tr(ref, 'Tax Payer Number', 'เลขประจำตัวผู้เสียภาษี'))),
         const SizedBox(height: 12),
-        const Text(
-            'Your application will be reviewed. This is for verification purposes.'),
+        Text(tr(
+            ref,
+            'Your application will be reviewed. This is for verification purposes.',
+            'ใบสมัครของคุณจะถูกตรวจสอบเพื่อยืนยันข้อมูลผู้ขาย')),
         const SizedBox(height: 20),
         ElevatedButton(
             onPressed: () async {
@@ -45,12 +52,13 @@ class _SellerApplyScreenState extends ConsumerState<SellerApplyScreen> {
                   .applySeller(shop.text, location.text, tax.text);
               await ref.read(authProvider.notifier).refreshMe();
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Application submitted')));
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text(
+                        tr(ref, 'Application submitted', 'ส่งใบสมัครแล้ว'))));
                 goBack(context, fallback: '/profile');
               }
             },
-            child: const Text('Submit')),
+            child: Text(tr(ref, 'Submit', 'ส่งข้อมูล'))),
       ]),
     );
   }

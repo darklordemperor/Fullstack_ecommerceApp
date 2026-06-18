@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/settings/app_settings.dart';
 import '../../../core/widget/app_ui.dart';
 import '../../cart/provider/cart_provider.dart';
 import '../provider/product_provider.dart';
@@ -27,7 +28,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     final product = ref.watch(productDetailProvider(widget.id));
     return Scaffold(
       appBar: AppBar(
-          leading: const AppBackButton(), title: const Text('Product Detail')),
+          leading: const AppBackButton(),
+          title: Text(tr(ref, 'Product Detail', 'รายละเอียดสินค้า'))),
       bottomNavigationBar: product.valueOrNull == null
           ? null
           : SafeArea(
@@ -35,9 +37,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
-                  border: const Border(
-                    top: BorderSide(color: AppTheme.line),
-                  ),
+                  border: const Border(top: BorderSide(color: AppTheme.line)),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x14000000),
+                      blurRadius: 22,
+                      offset: Offset(0, -8),
+                    ),
+                  ],
                 ),
                 child: Row(
                   children: [
@@ -49,11 +56,12 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                               .add(widget.id, quantity);
                           ref.invalidate(cartProvider);
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Added to cart')));
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                content: Text(tr(ref, 'Added to cart',
+                                    'เพิ่มลงตะกร้าแล้ว'))));
                           }
                         },
-                        child: const Text('Add to Cart'),
+                        child: Text(tr(ref, 'Add to Cart', 'เพิ่มลงตะกร้า')),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -61,7 +69,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       child: ElevatedButton(
                         onPressed: () => context.push(
                             '/checkout?productId=${widget.id}&quantity=$quantity'),
-                        child: const Text('Buy Now'),
+                        child: Text(tr(ref, 'Buy Now', 'ซื้อทันที')),
                       ),
                     ),
                   ],
@@ -76,39 +84,55 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         data: (item) {
           final images = item.images.isEmpty ? [item.mainImage] : item.images;
           return ListView(
+            padding: const EdgeInsets.only(bottom: 20),
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: AspectRatio(
-                    aspectRatio: 4 / 3,
-                    child: PageView.builder(
-                      itemCount: images.length,
-                      onPageChanged: (value) => setState(() => page = value),
-                      itemBuilder: (_, i) => AppProductImage(image: images[i]),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(26),
+                      child: AspectRatio(
+                        aspectRatio: 4 / 3,
+                        child: PageView.builder(
+                          itemCount: images.length,
+                          onPageChanged: (value) =>
+                              setState(() => page = value),
+                          itemBuilder: (_, i) =>
+                              AppProductImage(image: images[i]),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: 12,
+                      bottom: 12,
+                      child: _ImageCounter(
+                        current: page + 1,
+                        total: images.length,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (images.length > 1)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    images.length,
+                    (i) => AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      width: i == page ? 18 : 7,
+                      height: 7,
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(999),
+                        color: i == page ? AppTheme.primary : AppTheme.line,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  images.length,
-                  (i) => Container(
-                    width: 8,
-                    height: 8,
-                    margin: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: i == page
-                            ? AppTheme.primary
-                            : Colors.grey.shade300),
-                  ),
-                ),
-              ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -119,7 +143,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             ?.copyWith(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     Text(
-                      NumberFormat.currency(locale: 'th_TH', symbol: '\u0E3F')
+                      NumberFormat.currency(
+                              locale: moneyLocale(ref), symbol: '\u0E3F')
                           .format(item.price),
                       style: Theme.of(context)
                           .textTheme
@@ -129,13 +154,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                               fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: AppTheme.line),
-                      ),
+                    AppInfoPanel(
                       child: Row(
                         children: [
                           CircleAvatar(
@@ -154,56 +173,214 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                 style: const TextStyle(
                                     fontWeight: FontWeight.w800)),
                           ),
-                          Chip(label: Text('Stock ${item.stock}')),
+                          _MetaChip(
+                            icon: Icons.inventory_2_outlined,
+                            label:
+                                '${tr(ref, 'Stock', 'คงเหลือ')} ${item.stock}',
+                          ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppTheme.line),
-                          ),
-                          child: Row(
-                            children: [
-                              IconButton(
-                                  onPressed: quantity > 1
-                                      ? () => setState(() => quantity--)
-                                      : null,
-                                  icon: const Icon(Icons.remove_rounded)),
-                              Text('$quantity',
-                                  style:
-                                      Theme.of(context).textTheme.titleLarge),
-                              IconButton(
-                                  onPressed:
-                                      quantity < item.stock && quantity < 99
-                                          ? () => setState(() => quantity++)
-                                          : null,
-                                  icon: const Icon(Icons.add_rounded)),
-                            ],
-                          ),
+                        _QuantityStepper(
+                          value: quantity,
+                          canDecrease: quantity > 1,
+                          canIncrease: quantity < item.stock && quantity < 99,
+                          onDecrease: () => setState(() => quantity--),
+                          onIncrease: () => setState(() => quantity++),
                         ),
                         const Spacer(),
-                        Chip(label: Text(item.category)),
+                        _MetaChip(
+                          icon: Icons.category_outlined,
+                          label: categoryLabel(ref, item.category),
+                          highlighted: true,
+                        ),
                       ],
                     ),
-                    ExpansionTile(
-                        tilePadding: EdgeInsets.zero,
-                        title: const Text('Description'),
+                    const SizedBox(height: 18),
+                    AppInfoPanel(
+                      padding: const EdgeInsets.all(18),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Align(
-                              alignment: Alignment.centerLeft,
-                              child: Text(item.description))
-                        ]),
+                          Row(
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color:
+                                      AppTheme.primary.withValues(alpha: .10),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.notes_rounded,
+                                  color: AppTheme.primaryDark,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                tr(ref, 'Description', 'รายละเอียด'),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.w900),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          Text(
+                            item.description.trim().isEmpty
+                                ? tr(
+                                    ref,
+                                    'No product description has been added yet.',
+                                    'ยังไม่มีรายละเอียดสินค้า')
+                                : item.description.trim(),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
+                                  height: 1.55,
+                                  fontSize: 15,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _ImageCounter extends StatelessWidget {
+  const _ImageCounter({required this.current, required this.total});
+
+  final int current;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: .55),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        '$current/$total',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class _MetaChip extends StatelessWidget {
+  const _MetaChip({
+    required this.icon,
+    required this.label,
+    this.highlighted = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool highlighted;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final color = highlighted ? AppTheme.primaryDark : colors.onSurfaceVariant;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: highlighted
+            ? AppTheme.primary.withValues(alpha: .10)
+            : colors.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: colors.outlineVariant),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w800,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuantityStepper extends StatelessWidget {
+  const _QuantityStepper({
+    required this.value,
+    required this.canDecrease,
+    required this.canIncrease,
+    required this.onDecrease,
+    required this.onIncrease,
+  });
+
+  final int value;
+  final bool canDecrease;
+  final bool canIncrease;
+  final VoidCallback onDecrease;
+  final VoidCallback onIncrease;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 50,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            tooltip: AppLanguage.text('Decrease quantity', 'ลดจำนวน'),
+            onPressed: canDecrease ? onDecrease : null,
+            icon: const Icon(Icons.remove_rounded),
+          ),
+          SizedBox(
+            width: 34,
+            child: Text(
+              '$value',
+              textAlign: TextAlign.center,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w900),
+            ),
+          ),
+          IconButton(
+            tooltip: AppLanguage.text('Increase quantity', 'เพิ่มจำนวน'),
+            onPressed: canIncrease ? onIncrease : null,
+            icon: const Icon(Icons.add_rounded),
+          ),
+        ],
       ),
     );
   }

@@ -4,6 +4,7 @@ This repository contains a Go/MongoDB backend and a Flutter frontend for a small
 
 - `backend/`: Go, Gin, MongoDB, JWT auth, bcrypt, customer cart/checkout, seller dashboard, and admin management APIs.
 - `frontend/`: Flutter, Riverpod, Dio, GoRouter, secure token storage, image picking, customer/seller mobile UX, and a Flutter web admin dashboard.
+- `web_dashboard/`: Angular + Tailwind admin dashboard that uses the same backend admin APIs.
 
 ## Prerequisites
 
@@ -54,6 +55,14 @@ Run the Flutter web admin/client on port `8082`:
 
 ```bash
 flutter run -d chrome --web-port 8082
+```
+
+Run the Angular admin dashboard on port `4200`:
+
+```bash
+cd web_dashboard
+npm install
+npm start
 ```
 
 API base URL is platform-aware in `frontend/lib/core/constants/api_constants.dart`:

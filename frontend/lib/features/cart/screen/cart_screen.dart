@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/settings/app_settings.dart';
 import '../../../core/widget/app_ui.dart';
 import '../../../core/theme/app_theme.dart';
 import '../provider/cart_provider.dart';
@@ -14,8 +15,9 @@ class CartScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cart = ref.watch(cartProvider);
     return Scaffold(
-      appBar:
-          AppBar(leading: const AppBackButton(), title: const Text('My Cart')),
+      appBar: AppBar(
+          leading: const AppBackButton(),
+          title: Text(tr(ref, 'My Cart', 'ตะกร้าของฉัน'))),
       bottomNavigationBar: cart.valueOrNull == null
           ? null
           : SafeArea(
@@ -32,14 +34,14 @@ class CartScreen extends ConsumerWidget {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Total',
+                          Text(tr(ref, 'Total', 'รวมทั้งหมด'),
                               style: Theme.of(context)
                                   .textTheme
                                   .labelMedium
                                   ?.copyWith(color: AppTheme.subtext)),
                           Text(
                             NumberFormat.currency(
-                                    locale: 'th_TH', symbol: '\u0E3F')
+                                    locale: moneyLocale(ref), symbol: '\u0E3F')
                                 .format(cart.value!.total),
                             style: Theme.of(context)
                                 .textTheme
@@ -55,7 +57,7 @@ class CartScreen extends ConsumerWidget {
                           : () async {
                               context.push('/checkout');
                             },
-                      child: const Text('Checkout'),
+                      child: Text(tr(ref, 'Checkout', 'ชำระเงิน')),
                     ),
                   ],
                 ),
@@ -68,10 +70,13 @@ class CartScreen extends ConsumerWidget {
             onRetry: () => ref.invalidate(cartProvider)),
         data: (value) {
           if (value.items.isEmpty) {
-            return const AppEmptyState(
+            return AppEmptyState(
               icon: Icons.shopping_cart_outlined,
-              title: 'Your cart is empty',
-              message: 'Add products from the home screen when you are ready.',
+              title: tr(ref, 'Your cart is empty', 'ตะกร้าของคุณว่าง'),
+              message: tr(
+                  ref,
+                  'Add products from the home screen when you are ready.',
+                  'เลือกสินค้าเพิ่มจากหน้าแรกเมื่อพร้อม'),
             );
           }
           return ListView.builder(
@@ -109,7 +114,8 @@ class CartScreen extends ConsumerWidget {
                               const SizedBox(height: 6),
                               Text(
                                   NumberFormat.currency(
-                                          locale: 'th_TH', symbol: '\u0E3F')
+                                          locale: moneyLocale(ref),
+                                          symbol: '\u0E3F')
                                       .format(item.price),
                                   style: const TextStyle(
                                       color: AppTheme.primaryDark,

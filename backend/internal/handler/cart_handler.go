@@ -49,6 +49,7 @@ func (h *CartHandler) Add(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load cart"})
 		return
 	}
+	cart.Items = normalizeCartItems(cart.Items)
 	image := ""
 	if len(product.Images) > 0 {
 		image = product.Images[0]
@@ -77,6 +78,7 @@ func (h *CartHandler) Update(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load cart"})
 		return
 	}
+	cart.Items = normalizeCartItems(cart.Items)
 	for i := range cart.Items {
 		if cart.Items[i].ProductID == productID {
 			cart.Items[i].Quantity = req.Quantity
@@ -130,6 +132,7 @@ func (h *CartHandler) Checkout(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load cart"})
 		return
 	}
+	cart.Items = normalizeCartItems(cart.Items)
 	if len(cart.Items) == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "cart is empty"})
 		return
@@ -222,6 +225,7 @@ func (h *CartHandler) BuyNow(c *gin.Context) {
 }
 
 func (h *CartHandler) saveCart(c *gin.Context, cart *model.Cart, message string) {
+	cart.Items = normalizeCartItems(cart.Items)
 	if err := h.carts.Save(c.Request.Context(), cart); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save cart"})
 		return
@@ -239,4 +243,18 @@ func bindCartQuantity(c *gin.Context, req *model.CartQuantityRequest) bool {
 		return false
 	}
 	return true
+}
+
+func normalizeCartItems(items []model.CartItem) []model.CartItem {
+	merged := make([]model.CartItem, 0, len(items))
+	indexByProductID := make(map[bson.ObjectID]int, len(items))
+	for _, item := range items {
+		if index, ok := indexByProductID[item.ProductID]; ok {
+			merged[index].Quantity += item.Quantity
+			continue
+		}
+		indexByProductID[item.ProductID] = len(merged)
+		merged = append(merged, item)
+	}
+	return merged
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/settings/app_settings.dart';
 import '../../../core/widget/app_ui.dart';
 import '../../product/provider/product_provider.dart';
 import '../provider/seller_provider.dart';
@@ -20,19 +21,26 @@ class SellerDashboardScreen extends ConsumerWidget {
       child: Scaffold(
         appBar: AppBar(
           leading: const AppBackButton(),
-          title: const Text('Seller Dashboard'),
-          bottom: const TabBar(
-            labelColor: Colors.white,
-            unselectedLabelColor: Color(0xFFFFE1D7),
-            indicatorColor: Colors.white,
-            indicatorWeight: 3,
-            tabs: [Tab(text: 'My Products'), Tab(text: 'Orders')],
+          title: Text(tr(ref, 'Seller Dashboard', 'แดชบอร์ดผู้ขาย')),
+          bottom: AppSegmentedTabBar(
+            tabs: [
+              Tab(
+                child: _TabLabel(
+                    icon: Icons.inventory_2_outlined,
+                    label: tr(ref, 'Products', 'สินค้า')),
+              ),
+              Tab(
+                child: _TabLabel(
+                    icon: Icons.receipt_long_outlined,
+                    label: tr(ref, 'Orders', 'คำสั่งซื้อ')),
+              ),
+            ],
           ),
         ),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () => context.push('/seller/product'),
           icon: const Icon(Icons.add),
-          label: const Text('Product'),
+          label: Text(tr(ref, 'Product', 'สินค้า')),
         ),
         body: Column(
           children: [
@@ -49,14 +57,15 @@ class SellerDashboardScreen extends ConsumerWidget {
                 child: Row(
                   children: [
                     _StatCard(
-                        label: 'Products',
+                        label: tr(ref, 'Products', 'สินค้า'),
                         value: '${s['total_products'] ?? 0}'),
                     _StatCard(
-                        label: 'Orders', value: '${s['total_orders'] ?? 0}'),
+                        label: tr(ref, 'Orders', 'คำสั่งซื้อ'),
+                        value: '${s['total_orders'] ?? 0}'),
                     _StatCard(
-                        label: 'Revenue',
+                        label: tr(ref, 'Revenue', 'รายได้'),
                         value: NumberFormat.currency(
-                                locale: 'th_TH', symbol: '\u0E3F')
+                                locale: moneyLocale(ref), symbol: '\u0E3F')
                             .format(s['total_revenue'] ?? 0)),
                   ],
                 ),
@@ -75,13 +84,16 @@ class SellerDashboardScreen extends ConsumerWidget {
                       if (items.isEmpty) {
                         return AppEmptyState(
                           icon: Icons.add_business_outlined,
-                          title: 'No products yet',
-                          message:
+                          title: tr(ref, 'No products yet', 'ยังไม่มีสินค้า'),
+                          message: tr(
+                              ref,
                               'Create your first product to start selling.',
+                              'สร้างสินค้าชิ้นแรกเพื่อเริ่มขาย'),
                           action: FilledButton.icon(
                               onPressed: () => context.push('/seller/product'),
                               icon: const Icon(Icons.add),
-                              label: const Text('Create product')),
+                              label: Text(
+                                  tr(ref, 'Create product', 'สร้างสินค้า'))),
                         );
                       }
                       return ListView.separated(
@@ -101,7 +113,7 @@ class SellerDashboardScreen extends ConsumerWidget {
                             title: Text(items[i].name,
                                 maxLines: 1, overflow: TextOverflow.ellipsis),
                             subtitle: Text(
-                                '${NumberFormat.currency(locale: 'th_TH', symbol: '\u0E3F').format(items[i].price)} - Stock ${items[i].stock}'),
+                                '${NumberFormat.currency(locale: moneyLocale(ref), symbol: '\u0E3F').format(items[i].price)} - ${tr(ref, 'Stock', 'คงเหลือ')} ${items[i].stock}'),
                             trailing: Wrap(
                               children: [
                                 IconButton(
@@ -127,10 +139,13 @@ class SellerDashboardScreen extends ConsumerWidget {
                         onRetry: () => ref.invalidate(sellerOrdersProvider)),
                     data: (items) {
                       if (items.isEmpty) {
-                        return const AppEmptyState(
+                        return AppEmptyState(
                           icon: Icons.receipt_long_outlined,
-                          title: 'No orders yet',
-                          message: 'Orders from customers will appear here.',
+                          title: tr(ref, 'No orders yet', 'ยังไม่มีคำสั่งซื้อ'),
+                          message: tr(
+                              ref,
+                              'Orders from customers will appear here.',
+                              'คำสั่งซื้อจากลูกค้าจะแสดงที่นี่'),
                         );
                       }
                       return ListView.builder(
@@ -142,12 +157,14 @@ class SellerDashboardScreen extends ConsumerWidget {
                           return Card(
                             child: ListTile(
                               title: Text(order['customer_name']?.toString() ??
-                                  'Customer'),
+                                  tr(ref, 'Customer', 'ลูกค้า')),
                               subtitle: Text(
-                                  '${list.length} items - ${NumberFormat.currency(locale: 'th_TH', symbol: '\u0E3F').format(order['total'] ?? 0)}'),
+                                  '${list.length} ${tr(ref, 'items', 'รายการ')} - ${NumberFormat.currency(locale: moneyLocale(ref), symbol: '\u0E3F').format(order['total'] ?? 0)}'),
                               trailing: Chip(
-                                  label: Text(order['status']?.toString() ??
-                                      'pending')),
+                                  label: Text(sellerStatusLabel(
+                                      ref,
+                                      order['status']?.toString() ??
+                                          'pending'))),
                             ),
                           );
                         },
@@ -168,15 +185,16 @@ class SellerDashboardScreen extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Delete product?'),
-        content: const Text('This product will be removed from your shop.'),
+        title: Text(tr(ref, 'Delete product?', 'ลบสินค้า?')),
+        content: Text(tr(ref, 'This product will be removed from your shop.',
+            'สินค้านี้จะถูกลบออกจากร้านของคุณ')),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
+              child: Text(tr(ref, 'Cancel', 'ยกเลิก'))),
           FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Delete')),
+              child: Text(tr(ref, 'Delete', 'ลบ'))),
         ],
       ),
     );
@@ -184,6 +202,30 @@ class SellerDashboardScreen extends ConsumerWidget {
       await ref.read(productRepositoryProvider).delete(id);
       await refreshSeller(ref);
     }
+  }
+}
+
+class _TabLabel extends StatelessWidget {
+  const _TabLabel({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icon, size: 18),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            label,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
   }
 }
 

@@ -31,7 +31,7 @@ class HomeScreen extends ConsumerWidget {
         title: const Text('ShopApp'),
         actions: [
           IconButton(
-            tooltip: 'Profile',
+            tooltip: tr(ref, 'Profile', 'โปรไฟล์'),
             icon: const Icon(Icons.person_outline_rounded),
             onPressed: () => context.push('/profile'),
           ),
@@ -39,7 +39,7 @@ class HomeScreen extends ConsumerWidget {
             clipBehavior: Clip.none,
             children: [
               IconButton(
-                tooltip: 'Cart',
+                tooltip: tr(ref, 'Cart', 'ตะกร้า'),
                 icon: const Icon(Icons.shopping_bag_outlined),
                 onPressed: () => context.push('/cart'),
               ),
@@ -77,7 +77,7 @@ class HomeScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Discover products',
+                      tr(ref, 'Discover products', 'เลือกซื้อสินค้า'),
                       style: Theme.of(context)
                           .textTheme
                           .headlineMedium
@@ -85,7 +85,8 @@ class HomeScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Curated picks from trusted sellers.',
+                      tr(ref, 'Curated picks from trusted sellers.',
+                          'สินค้าคัดสรรจากผู้ขายที่เชื่อถือได้'),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color:
                                 Theme.of(context).colorScheme.onSurfaceVariant,
@@ -93,9 +94,9 @@ class HomeScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                     TextField(
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.search_rounded),
-                        hintText: 'Search products',
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.search_rounded),
+                        hintText: tr(ref, 'Search products', 'ค้นหาสินค้า'),
                         filled: true,
                       ),
                       textInputAction: TextInputAction.search,
@@ -116,7 +117,7 @@ class HomeScreen extends ConsumerWidget {
                   itemCount: categories.length,
                   separatorBuilder: (_, __) => const SizedBox(width: 10),
                   itemBuilder: (_, i) => ChoiceChip(
-                    label: Text(categories[i]),
+                    label: Text(categoryLabel(ref, categories[i])),
                     selected: selected == categories[i],
                     showCheckmark: false,
                     avatar: selected == categories[i]
@@ -135,13 +136,15 @@ class HomeScreen extends ConsumerWidget {
                   return SliverFillRemaining(
                     child: AppEmptyState(
                       icon: Icons.inventory_2_outlined,
-                      title: 'No products yet',
-                      message:
+                      title: tr(ref, 'No products yet', 'ยังไม่มีสินค้า'),
+                      message: tr(
+                          ref,
                           'Products will appear here after sellers add them.',
+                          'สินค้าจะแสดงที่นี่เมื่อผู้ขายเพิ่มสินค้า'),
                       action: OutlinedButton.icon(
                         onPressed: () => ref.invalidate(productsProvider),
                         icon: const Icon(Icons.refresh),
-                        label: const Text('Refresh'),
+                        label: Text(tr(ref, 'Refresh', 'รีเฟรช')),
                       ),
                     ),
                   );
@@ -188,87 +191,313 @@ class ShopDrawer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).user;
+    final settings = ref.watch(appSettingsProvider);
+    final colors = Theme.of(context).colorScheme;
     return Drawer(
+      width: 320,
+      backgroundColor: colors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.horizontal(right: Radius.circular(28)),
+      ),
       child: Column(
         children: [
-          UserAccountsDrawerHeader(
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(20, 54, 20, 24),
             decoration: const BoxDecoration(
               color: AppTheme.text,
+              borderRadius: BorderRadius.only(topRight: Radius.circular(28)),
             ),
-            currentAccountPicture: CircleAvatar(
-              backgroundColor: Colors.white,
-              child: ClipOval(
-                child: user?.profileImage?.isNotEmpty == true
-                    ? AppProductImage(
-                        image: user!.profileImage!, width: 72, height: 72)
-                    : Text(user?.initials ?? 'U'),
-              ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 34,
+                  backgroundColor: Colors.white,
+                  child: ClipOval(
+                    child: user?.profileImage?.isNotEmpty == true
+                        ? AppProductImage(
+                            image: user!.profileImage!, width: 68, height: 68)
+                        : Text(user?.initials ?? 'U',
+                            style: const TextStyle(
+                                color: AppTheme.text,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 20)),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(user?.fullName ?? tr(ref, 'Customer', 'ลูกค้า'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900)),
+                      const SizedBox(height: 4),
+                      Text(user?.email ?? '',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              color: Colors.white.withValues(alpha: .78),
+                              fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            accountName: Text(user?.fullName ?? 'Customer'),
-            accountEmail: Text(user?.email ?? ''),
           ),
-          ListTile(
-            leading: const Icon(Icons.home),
-            title: const Text('Home'),
-            onTap: () => context.go('/home'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.shopping_cart),
-            title: const Text('Cart'),
-            onTap: () => context.push('/cart'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.person),
-            title: const Text('Profile'),
-            onTap: () => context.push('/profile'),
-          ),
-          if (user?.isApprovedSeller ?? false)
-            ListTile(
-              leading: const Icon(Icons.store),
-              title: const Text('Seller Dashboard'),
-              onTap: () => context.push('/seller'),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+              children: [
+                _DrawerTile(
+                  icon: Icons.home_rounded,
+                  label: tr(ref, 'Home', 'หน้าแรก'),
+                  selected: true,
+                  onTap: () => context.go('/home'),
+                ),
+                _DrawerTile(
+                  icon: Icons.shopping_cart_rounded,
+                  label: tr(ref, 'Cart', 'ตะกร้า'),
+                  onTap: () => context.push('/cart'),
+                ),
+                _DrawerTile(
+                  icon: Icons.person_rounded,
+                  label: tr(ref, 'Profile', 'โปรไฟล์'),
+                  onTap: () => context.push('/profile'),
+                ),
+                if (user?.isApprovedSeller ?? false)
+                  _DrawerTile(
+                    icon: Icons.storefront_rounded,
+                    label: tr(ref, 'Seller Dashboard', 'แดชบอร์ดผู้ขาย'),
+                    onTap: () => context.push('/seller'),
+                  ),
+                if (user?.isAdmin ?? false)
+                  _DrawerTile(
+                    icon: Icons.admin_panel_settings_rounded,
+                    label: tr(ref, 'Admin Dashboard', 'แดชบอร์ดแอดมิน'),
+                    onTap: () => context.push('/admin'),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 18, 8, 10),
+                  child: Text(
+                    tr(ref, 'Preferences', 'ตั้งค่า'),
+                    style: TextStyle(
+                        color: colors.onSurfaceVariant,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900),
+                  ),
+                ),
+                _SettingTile(
+                  icon: settings.themeMode == ThemeMode.dark
+                      ? Icons.dark_mode_rounded
+                      : Icons.light_mode_rounded,
+                  title: tr(ref, 'Theme', 'ธีม'),
+                  subtitle: settings.themeMode == ThemeMode.dark
+                      ? tr(ref, 'Dark', 'มืด')
+                      : tr(ref, 'Light', 'สว่าง'),
+                  onTap: () =>
+                      ref.read(appSettingsProvider.notifier).toggleTheme(),
+                ),
+                _SettingTile(
+                  icon: Icons.language_rounded,
+                  title: tr(ref, 'Language', 'ภาษา'),
+                  subtitle: settings.languageCode == 'en' ? 'English' : 'ไทย',
+                  trailing: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: colors.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _LanguagePill(
+                            label: 'EN',
+                            selected: settings.languageCode == 'en'),
+                        _LanguagePill(
+                            label: 'TH',
+                            selected: settings.languageCode == 'th'),
+                      ],
+                    ),
+                  ),
+                  onTap: () =>
+                      ref.read(appSettingsProvider.notifier).toggleLanguage(),
+                ),
+              ],
             ),
-          if (user?.isAdmin ?? false)
-            ListTile(
-              leading: const Icon(Icons.admin_panel_settings_outlined),
-              title: const Text('Admin Dashboard'),
-              onTap: () => context.push('/admin'),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 8, 14, 20),
+            child: _DrawerTile(
+              icon: Icons.logout_rounded,
+              label: tr(ref, 'Logout', 'ออกจากระบบ'),
+              danger: true,
+              onTap: () async {
+                await ref.read(authProvider.notifier).logout();
+                if (context.mounted) {
+                  context.go('/login');
+                }
+              },
             ),
-          const Divider(),
-          ListTile(
-            leading: Icon(
-                ref.watch(appSettingsProvider).themeMode == ThemeMode.dark
-                    ? Icons.dark_mode
-                    : Icons.light_mode),
-            title: Text(tr(ref, 'Theme', 'ธีม')),
-            subtitle: Text(
-                ref.watch(appSettingsProvider).themeMode == ThemeMode.dark
-                    ? tr(ref, 'Dark', 'มืด')
-                    : tr(ref, 'Light', 'สว่าง')),
-            onTap: () => ref.read(appSettingsProvider.notifier).toggleTheme(),
-          ),
-          ListTile(
-            leading: const Icon(Icons.language),
-            title: Text(tr(ref, 'Language', 'ภาษา')),
-            subtitle: Text(ref.watch(appSettingsProvider).languageCode == 'en'
-                ? 'English'
-                : 'ไทย'),
-            onTap: () =>
-                ref.read(appSettingsProvider.notifier).toggleLanguage(),
-          ),
-          const Spacer(),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Logout'),
-            onTap: () async {
-              await ref.read(authProvider.notifier).logout();
-              if (context.mounted) {
-                context.go('/login');
-              }
-            },
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _DrawerTile extends StatelessWidget {
+  const _DrawerTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.selected = false,
+    this.danger = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool selected;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final foreground = danger
+        ? AppTheme.primaryDark
+        : selected
+            ? Colors.white
+            : colors.onSurfaceVariant;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Material(
+        color: selected
+            ? AppTheme.text
+            : danger
+                ? AppTheme.primary.withValues(alpha: .08)
+                : Colors.transparent,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            child: Row(
+              children: [
+                Icon(icon, color: foreground),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          color: foreground,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingTile extends StatelessWidget {
+  const _SettingTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.trailing,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Material(
+        color: colors.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            child: Row(
+              children: [
+                Icon(icon, color: colors.onSurfaceVariant),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title,
+                          style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              color: colors.onSurface)),
+                      const SizedBox(height: 2),
+                      Text(subtitle,
+                          style: TextStyle(
+                              color: colors.onSurfaceVariant,
+                              fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                ),
+                if (trailing != null) trailing!,
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LanguagePill extends StatelessWidget {
+  const _LanguagePill({required this.label, required this.selected});
+
+  final String label;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: selected ? colors.surface : Colors.transparent,
+        borderRadius: BorderRadius.circular(999),
+        boxShadow: selected
+            ? const [
+                BoxShadow(
+                    color: Color(0x12000000),
+                    blurRadius: 8,
+                    offset: Offset(0, 3))
+              ]
+            : null,
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: selected ? AppTheme.primaryDark : colors.onSurfaceVariant,
+          fontWeight: FontWeight.w900,
+          fontSize: 11,
+        ),
       ),
     );
   }

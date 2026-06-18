@@ -24,9 +24,9 @@ final sellerOrdersProvider =
   return data.map((e) => Map<String, dynamic>.from(e)).toList();
 });
 
-Future<void> refreshSeller(WidgetRef ref) async {
+Future<void> refreshSeller(WidgetRef ref, {String? productId}) async {
   ref.invalidate(sellerStatsProvider);
   ref.invalidate(sellerProductsProvider);
   ref.invalidate(sellerOrdersProvider);
-  ref.invalidate(productsProvider);
+  refreshProductCaches(ref, productId: productId);
 }

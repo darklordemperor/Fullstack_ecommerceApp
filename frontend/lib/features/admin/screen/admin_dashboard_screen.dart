@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/settings/app_settings.dart';
 import '../../../core/widget/app_ui.dart';
 import '../provider/admin_provider.dart';
 
@@ -19,12 +20,20 @@ class AdminDashboardScreen extends ConsumerWidget {
       child: Scaffold(
         appBar: AppBar(
           automaticallyImplyLeading: false,
-          title: const Text('Admin Dashboard'),
-          bottom: const TabBar(
-            labelColor: Colors.white,
-            unselectedLabelColor: Color(0xFFFFE1D7),
-            indicatorColor: Colors.white,
-            tabs: [Tab(text: 'Users'), Tab(text: 'Products')],
+          title: Text(tr(ref, 'Admin Dashboard', 'แดชบอร์ดแอดมิน')),
+          bottom: AppSegmentedTabBar(
+            tabs: [
+              Tab(
+                child: _TabLabel(
+                    icon: Icons.group_outlined,
+                    label: tr(ref, 'Users', 'ผู้ใช้')),
+              ),
+              Tab(
+                child: _TabLabel(
+                    icon: Icons.inventory_2_outlined,
+                    label: tr(ref, 'Products', 'สินค้า')),
+              ),
+            ],
           ),
         ),
         body: Column(
@@ -40,15 +49,19 @@ class AdminDashboardScreen extends ConsumerWidget {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    _Stat(label: 'Users', value: '${s['total_users'] ?? 0}'),
                     _Stat(
-                        label: 'Products',
+                        label: tr(ref, 'Users', 'ผู้ใช้'),
+                        value: '${s['total_users'] ?? 0}'),
+                    _Stat(
+                        label: tr(ref, 'Products', 'สินค้า'),
                         value: '${s['total_products'] ?? 0}'),
-                    _Stat(label: 'Orders', value: '${s['total_orders'] ?? 0}'),
                     _Stat(
-                        label: 'Revenue',
+                        label: tr(ref, 'Orders', 'คำสั่งซื้อ'),
+                        value: '${s['total_orders'] ?? 0}'),
+                    _Stat(
+                        label: tr(ref, 'Revenue', 'รายได้'),
                         value: NumberFormat.currency(
-                                locale: 'th_TH', symbol: '\u0E3F')
+                                locale: moneyLocale(ref), symbol: '\u0E3F')
                             .format(s['total_revenue'] ?? 0)),
                   ],
                 ),
@@ -79,17 +92,17 @@ class AdminDashboardScreen extends ConsumerWidget {
                                     : Text(user.initials),
                               ),
                             ),
-                            subtitle:
-                                Text('${user.email} - ${user.role.join(', ')}'),
+                            subtitle: Text(
+                                '${user.email} - ${user.role.map((role) => roleLabel(ref, role)).join(', ')}'),
                             trailing: user.isAdmin
-                                ? const Chip(label: Text('Admin'))
+                                ? Chip(label: Text(roleLabel(ref, 'admin')))
                                 : FilledButton.tonalIcon(
                                     icon: Icon(user.banned
                                         ? Icons.lock_open
                                         : Icons.block),
                                     label: Text(user.banned
-                                        ? 'Unban user'
-                                        : 'Ban user'),
+                                        ? tr(ref, 'Unban user', 'ปลดแบนผู้ใช้')
+                                        : tr(ref, 'Ban user', 'แบนผู้ใช้')),
                                     onPressed: () =>
                                         _setBanned(ref, user.id, !user.banned),
                                   ),
@@ -103,8 +116,9 @@ class AdminDashboardScreen extends ConsumerWidget {
                                 const SizedBox(width: 8),
                                 Chip(
                                   visualDensity: VisualDensity.compact,
-                                  label:
-                                      Text(user.banned ? 'Banned' : 'Active'),
+                                  label: Text(user.banned
+                                      ? tr(ref, 'Banned', 'ถูกแบน')
+                                      : tr(ref, 'Active', 'ใช้งานอยู่')),
                                   backgroundColor: user.banned
                                       ? Colors.red.shade100
                                       : Colors.green.shade100,
@@ -137,7 +151,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                             title: Text(product.name,
                                 maxLines: 1, overflow: TextOverflow.ellipsis),
                             subtitle: Text(
-                                '${product.sellerName} - ${NumberFormat.currency(locale: 'th_TH', symbol: '\u0E3F').format(product.price)}'),
+                                '${product.sellerName} - ${NumberFormat.currency(locale: moneyLocale(ref), symbol: '\u0E3F').format(product.price)}'),
                             trailing: IconButton(
                                 icon: const Icon(Icons.delete_outline),
                                 onPressed: () =>
@@ -164,6 +178,30 @@ class AdminDashboardScreen extends ConsumerWidget {
   Future<void> _deleteProduct(WidgetRef ref, String productId) async {
     await ref.read(adminRepositoryProvider).deleteProduct(productId);
     refreshAdmin(ref);
+  }
+}
+
+class _TabLabel extends StatelessWidget {
+  const _TabLabel({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icon, size: 18),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            label,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
   }
 }
 

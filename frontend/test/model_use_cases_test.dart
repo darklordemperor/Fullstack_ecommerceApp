@@ -58,9 +58,36 @@ void main() {
         ],
       });
 
-      expect(cart.count, 3);
+      expect(cart.count, 2);
       expect(cart.items.first.subtotal, 2400.0);
       expect(cart.total, 2850.5);
+    });
+
+    test('merges duplicate product rows into one cart item', () {
+      final cart = CartModel.fromJson({
+        'id': 'cart1',
+        'items': [
+          {
+            'product_id': 'p1',
+            'name': 'Keyboard',
+            'price': 1200.0,
+            'image': 'https://example.com/k.png',
+            'quantity': 1
+          },
+          {
+            'product_id': 'p1',
+            'name': 'Keyboard',
+            'price': 1200.0,
+            'image': 'https://example.com/k.png',
+            'quantity': 2
+          },
+        ],
+      });
+
+      expect(cart.count, 1);
+      expect(cart.items, hasLength(1));
+      expect(cart.items.single.quantity, 3);
+      expect(cart.total, 3600.0);
     });
 
     test('empty cart has zero count and total', () {

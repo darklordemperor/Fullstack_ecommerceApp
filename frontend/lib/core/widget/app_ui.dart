@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../settings/app_settings.dart';
+
 class AppBackButton extends StatelessWidget {
   const AppBackButton({super.key, this.fallback = '/home'});
 
@@ -15,7 +17,7 @@ class AppBackButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      tooltip: 'Back',
+      tooltip: AppLanguage.text('Back', 'ย้อนกลับ'),
       icon: const Icon(Icons.arrow_back_rounded),
       onPressed: () => goBack(context, fallback: fallback),
     );
@@ -89,14 +91,98 @@ class AppErrorState extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppEmptyState(
       icon: Icons.cloud_off_outlined,
-      title: 'Unable to load this right now',
+      title: AppLanguage.text(
+          'Unable to load this right now', 'ไม่สามารถโหลดข้อมูลได้'),
       message: message,
       action: onRetry == null
           ? null
           : OutlinedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Try again')),
+              label: Text(AppLanguage.text('Try again', 'ลองอีกครั้ง'))),
+    );
+  }
+}
+
+class AppSegmentedTabBar extends StatelessWidget
+    implements PreferredSizeWidget {
+  const AppSegmentedTabBar({
+    super.key,
+    required this.tabs,
+    this.padding = const EdgeInsets.fromLTRB(16, 4, 16, 12),
+  });
+
+  final List<Widget> tabs;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Size get preferredSize => const Size.fromHeight(62);
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Padding(
+      padding: padding,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colors.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: colors.outlineVariant),
+        ),
+        child: TabBar(
+          dividerColor: Colors.transparent,
+          indicatorSize: TabBarIndicatorSize.tab,
+          labelColor: colors.onSurface,
+          unselectedLabelColor: colors.onSurfaceVariant,
+          labelStyle: const TextStyle(fontWeight: FontWeight.w800),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),
+          indicator: BoxDecoration(
+            color: colors.surface,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x14000000),
+                blurRadius: 14,
+                offset: Offset(0, 6),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(4),
+          tabs: tabs,
+        ),
+      ),
+    );
+  }
+}
+
+class AppInfoPanel extends StatelessWidget {
+  const AppInfoPanel({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(16),
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: colors.outlineVariant),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F111827),
+            blurRadius: 18,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
+      child: child,
     );
   }
 }
@@ -105,14 +191,18 @@ String friendlyError(Object error) {
   debugPrint('App error: $error');
   final text = error.toString().toLowerCase();
   if (text.contains('401') || text.contains('unauthorized')) {
-    return 'Please sign in again to continue.';
+    return AppLanguage.text('Please sign in again to continue.',
+        'กรุณาเข้าสู่ระบบอีกครั้งเพื่อดำเนินการต่อ');
   }
   if (text.contains('socket') ||
       text.contains('connection') ||
       text.contains('dioexception')) {
-    return 'Please check that the backend is running and your device has a connection.';
+    return AppLanguage.text(
+        'Please check that the backend is running and your device has a connection.',
+        'กรุณาตรวจสอบว่า backend กำลังทำงานและอุปกรณ์เชื่อมต่อเครือข่ายอยู่');
   }
-  return 'Something went wrong. Please try again.';
+  return AppLanguage.text('Something went wrong. Please try again.',
+      'เกิดข้อผิดพลาด กรุณาลองอีกครั้ง');
 }
 
 class AppProductImage extends StatelessWidget {
@@ -198,10 +288,15 @@ Future<bool> ensureImagePermission(
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(source == ImageSource.camera
-              ? 'Camera permission is required to take a photo.'
-              : 'Photo permission is required to choose an image.'),
-          action: const SnackBarAction(
-              label: 'Settings', onPressed: openAppSettings),
+              ? AppLanguage.text(
+                  'Camera permission is required to take a photo.',
+                  'ต้องอนุญาตใช้กล้องเพื่อถ่ายรูป')
+              : AppLanguage.text(
+                  'Photo permission is required to choose an image.',
+                  'ต้องอนุญาตเข้าถึงรูปภาพเพื่อเลือกรูป')),
+          action: SnackBarAction(
+              label: AppLanguage.text('Settings', 'ตั้งค่า'),
+              onPressed: openAppSettings),
         ),
       );
     }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/settings/app_settings.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widget/app_ui.dart';
 import '../../auth/provider/auth_provider.dart';
@@ -29,7 +30,7 @@ class CheckoutScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
           leading: const AppBackButton(fallback: '/home'),
-          title: const Text('Checkout')),
+          title: Text(tr(ref, 'Checkout', 'ชำระเงิน'))),
       bottomNavigationBar: _CheckoutFooter(
         total: isBuyNow
             ? (directProduct?.valueOrNull?.price ?? 0) * (quantity ?? 1)
@@ -42,10 +43,11 @@ class CheckoutScreen extends ConsumerWidget {
           _Section(
             child: ListTile(
               leading: const Icon(Icons.location_on, color: AppTheme.primary),
-              title: Text(user?.fullName ?? 'Customer'),
+              title: Text(user?.fullName ?? tr(ref, 'Customer', 'ลูกค้า')),
               subtitle: Text(user?.address?.isNotEmpty == true
                   ? user!.address!
-                  : 'Add your delivery address in Profile.'),
+                  : tr(ref, 'Add your delivery address in Profile.',
+                      'เพิ่มที่อยู่จัดส่งในหน้าโปรไฟล์')),
               trailing: const Icon(Icons.chevron_right),
             ),
           ),
@@ -76,21 +78,23 @@ class CheckoutScreen extends ConsumerWidget {
                   items: value.items.map(_CheckoutItem.fromCart).toList()),
             ),
           const SizedBox(height: 10),
-          const _Section(
+          _Section(
             child: Column(
               children: [
                 ListTile(
-                    leading: Icon(Icons.local_shipping_outlined),
-                    title: Text('Standard Delivery'),
-                    subtitle: Text('Domestic shipping'),
-                    trailing: Text('Free')),
-                Divider(height: 1),
+                    leading: const Icon(Icons.local_shipping_outlined),
+                    title: Text(tr(ref, 'Standard Delivery', 'จัดส่งมาตรฐาน')),
+                    subtitle:
+                        Text(tr(ref, 'Domestic shipping', 'จัดส่งภายในประเทศ')),
+                    trailing: Text(tr(ref, 'Free', 'ฟรี'))),
+                const Divider(height: 1),
                 ListTile(
-                    leading: Icon(Icons.payments_outlined),
-                    title: Text('Payment'),
-                    subtitle: Text('Cashless demo payment'),
-                    trailing:
-                        Icon(Icons.check_circle, color: AppTheme.primary)),
+                    leading: const Icon(Icons.payments_outlined),
+                    title: Text(tr(ref, 'Payment', 'การชำระเงิน')),
+                    subtitle: Text(tr(ref, 'Cashless demo payment',
+                        'การชำระเงินตัวอย่างแบบไม่ใช้เงินสด')),
+                    trailing: const Icon(Icons.check_circle,
+                        color: AppTheme.primary)),
               ],
             ),
           ),
@@ -107,9 +111,11 @@ class CheckoutScreen extends ConsumerWidget {
   Future<void> _placeOrder(BuildContext context, WidgetRef ref) async {
     final user = ref.read(authProvider).user;
     if (user?.address?.isNotEmpty != true) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text(
-              'Please add your delivery address in Profile before checkout.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(tr(
+              ref,
+              'Please add your delivery address in Profile before checkout.',
+              'กรุณาเพิ่มที่อยู่จัดส่งในโปรไฟล์ก่อนชำระเงิน'))));
       return;
     }
     if (isBuyNow) {
@@ -120,8 +126,9 @@ class CheckoutScreen extends ConsumerWidget {
     }
     await refreshSeller(ref);
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Order placed successfully!')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content:
+              Text(tr(ref, 'Order placed successfully!', 'สั่งซื้อสำเร็จ'))));
       goBack(context, fallback: '/home');
     }
   }
@@ -147,7 +154,7 @@ class _CheckoutItem {
         image: item.image,
         price: item.price,
         quantity: item.quantity,
-        sellerName: 'Seller');
+        sellerName: '');
   }
 
   factory _CheckoutItem.fromProduct(ProductModel product, int quantity) {
@@ -160,18 +167,19 @@ class _CheckoutItem {
   }
 }
 
-class _ProductSection extends StatelessWidget {
+class _ProductSection extends ConsumerWidget {
   const _ProductSection({required this.items});
 
   final List<_CheckoutItem> items;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (items.isEmpty) {
-      return const AppEmptyState(
+      return AppEmptyState(
           icon: Icons.shopping_bag_outlined,
-          title: 'Nothing to checkout',
-          message: 'Add a product before placing an order.');
+          title: tr(ref, 'Nothing to checkout', 'ไม่มีสินค้าให้ชำระเงิน'),
+          message: tr(ref, 'Add a product before placing an order.',
+              'เพิ่มสินค้าก่อนทำรายการสั่งซื้อ'));
     }
     return _Section(
       child: Column(
@@ -184,13 +192,16 @@ class _ProductSection extends StatelessWidget {
                       image: item.image, width: 64, height: 64)),
               title:
                   Text(item.name, maxLines: 2, overflow: TextOverflow.ellipsis),
-              subtitle: Text(item.sellerName),
+              subtitle: Text(item.sellerName.isEmpty
+                  ? tr(ref, 'Seller', 'ผู้ขาย')
+                  : item.sellerName),
               trailing: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                      NumberFormat.currency(locale: 'th_TH', symbol: '\u0E3F')
+                      NumberFormat.currency(
+                              locale: moneyLocale(ref), symbol: '\u0E3F')
                           .format(item.price),
                       overflow: TextOverflow.ellipsis),
                   Text('x${item.quantity}'),
@@ -203,24 +214,27 @@ class _ProductSection extends StatelessWidget {
   }
 }
 
-class _Summary extends StatelessWidget {
+class _Summary extends ConsumerWidget {
   const _Summary({required this.total});
 
   final double total;
 
   @override
-  Widget build(BuildContext context) {
-    final money = NumberFormat.currency(locale: 'th_TH', symbol: '\u0E3F');
+  Widget build(BuildContext context, WidgetRef ref) {
+    final money =
+        NumberFormat.currency(locale: moneyLocale(ref), symbol: '\u0E3F');
     return _Section(
       child: Column(
         children: [
           ListTile(
-              title: const Text('Subtotal'),
+              title: Text(tr(ref, 'Subtotal', 'ยอดสินค้า')),
               trailing: Text(money.format(total))),
-          const ListTile(title: Text('Shipping'), trailing: Text('Free')),
+          ListTile(
+              title: Text(tr(ref, 'Shipping', 'ค่าจัดส่ง')),
+              trailing: Text(tr(ref, 'Free', 'ฟรี'))),
           const Divider(height: 1),
           ListTile(
-              title: const Text('Total'),
+              title: Text(tr(ref, 'Total', 'รวมทั้งหมด')),
               trailing: Text(money.format(total),
                   style: const TextStyle(
                       color: AppTheme.primary, fontWeight: FontWeight.bold))),
@@ -230,14 +244,14 @@ class _Summary extends StatelessWidget {
   }
 }
 
-class _CheckoutFooter extends StatelessWidget {
+class _CheckoutFooter extends ConsumerWidget {
   const _CheckoutFooter({required this.total, required this.onPlaceOrder});
 
   final double total;
   final VoidCallback onPlaceOrder;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return SafeArea(
       child: Container(
         padding: const EdgeInsets.all(12),
@@ -250,14 +264,14 @@ class _CheckoutFooter extends StatelessWidget {
           children: [
             Expanded(
                 child: Text(
-                    'Total ${NumberFormat.currency(locale: 'th_TH', symbol: '\u0E3F').format(total)}',
+                    '${tr(ref, 'Total', 'รวมทั้งหมด')} ${NumberFormat.currency(locale: moneyLocale(ref), symbol: '\u0E3F').format(total)}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontWeight: FontWeight.bold))),
             const SizedBox(width: 12),
             FilledButton(
                 onPressed: total <= 0 ? null : onPlaceOrder,
-                child: const Text('Place Order')),
+                child: Text(tr(ref, 'Place Order', 'สั่งซื้อ'))),
           ],
         ),
       ),

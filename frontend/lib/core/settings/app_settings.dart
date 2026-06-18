@@ -29,7 +29,15 @@ class AppSettingsNotifier extends StateNotifier<AppSettings> {
   void toggleLanguage() {
     state =
         state.copyWith(languageCode: state.languageCode == 'en' ? 'th' : 'en');
+    AppLanguage.currentCode = state.languageCode;
   }
+}
+
+class AppLanguage {
+  static String currentCode = 'en';
+  static bool get isThai => currentCode == 'th';
+
+  static String text(String en, String th) => isThai ? th : en;
 }
 
 final appSettingsProvider =
@@ -38,4 +46,52 @@ final appSettingsProvider =
 
 String tr(WidgetRef ref, String en, String th) {
   return ref.watch(appSettingsProvider).languageCode == 'th' ? th : en;
+}
+
+bool isThai(WidgetRef ref) =>
+    ref.watch(appSettingsProvider).languageCode == 'th';
+
+String moneyLocale(WidgetRef ref) => isThai(ref) ? 'th_TH' : 'en_US';
+
+String categoryLabel(WidgetRef ref, String category) {
+  final th = switch (category) {
+    'All' => 'ทั้งหมด',
+    'Electronics' => 'อิเล็กทรอนิกส์',
+    'Fashion' => 'แฟชั่น',
+    'Food' => 'อาหาร',
+    'Sports' => 'กีฬา',
+    'Beauty' => 'ความงาม',
+    _ => category,
+  };
+  return isThai(ref) ? th : category;
+}
+
+String genderLabel(WidgetRef ref, String gender) {
+  final th = switch (gender) {
+    'Female' => 'หญิง',
+    'Male' => 'ชาย',
+    'Other' => 'อื่น ๆ',
+    _ => gender,
+  };
+  return isThai(ref) ? th : gender;
+}
+
+String roleLabel(WidgetRef ref, String role) {
+  final th = switch (role) {
+    'customer' => 'ผู้ซื้อ',
+    'seller' => 'ผู้ขาย',
+    'admin' => 'แอดมิน',
+    _ => role,
+  };
+  return isThai(ref) ? th : role;
+}
+
+String sellerStatusLabel(WidgetRef ref, String status) {
+  final th = switch (status) {
+    'approved' => 'อนุมัติแล้ว',
+    'pending' => 'รอตรวจสอบ',
+    'none' => 'ไม่มี',
+    _ => status,
+  };
+  return isThai(ref) ? th : status;
 }

@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/settings/app_settings.dart';
 import '../../../core/widget/app_ui.dart';
 import '../../product/provider/product_provider.dart';
 import '../provider/seller_provider.dart';
@@ -72,8 +73,9 @@ class _SellerProductFormScreenState
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(fallback: '/seller'),
-        title:
-            Text(widget.productId == null ? 'Create Product' : 'Edit Product'),
+        title: Text(widget.productId == null
+            ? tr(ref, 'Create Product', 'สร้างสินค้า')
+            : tr(ref, 'Edit Product', 'แก้ไขสินค้า')),
       ),
       body: product?.isLoading == true
           ? const Center(child: CircularProgressIndicator())
@@ -89,13 +91,14 @@ class _SellerProductFormScreenState
                     children: [
                       TextFormField(
                         controller: name,
-                        decoration: const InputDecoration(
-                            labelText: 'Product name',
-                            prefixIcon: Icon(Icons.sell_outlined)),
+                        decoration: InputDecoration(
+                            labelText: tr(ref, 'Product name', 'ชื่อสินค้า'),
+                            prefixIcon: const Icon(Icons.sell_outlined)),
                         textInputAction: TextInputAction.next,
                         validator: (value) =>
                             value == null || value.trim().isEmpty
-                                ? 'Enter a product name.'
+                                ? tr(ref, 'Enter a product name.',
+                                    'กรุณากรอกชื่อสินค้า')
                                 : null,
                       ),
                       const SizedBox(height: 12),
@@ -103,12 +106,15 @@ class _SellerProductFormScreenState
                         controller: description,
                         minLines: 3,
                         maxLines: 5,
-                        decoration: const InputDecoration(
-                            labelText: 'Description',
-                            prefixIcon: Icon(Icons.description_outlined)),
+                        decoration: InputDecoration(
+                            labelText: tr(ref, 'Description', 'รายละเอียด'),
+                            prefixIcon: const Icon(Icons.description_outlined)),
                         validator: (value) => value == null ||
                                 value.trim().length < 10
-                            ? 'Describe the product in at least 10 characters.'
+                            ? tr(
+                                ref,
+                                'Describe the product in at least 10 characters.',
+                                'กรุณาอธิบายสินค้าอย่างน้อย 10 ตัวอักษร')
                             : null,
                       ),
                       const SizedBox(height: 12),
@@ -119,17 +125,21 @@ class _SellerProductFormScreenState
                         inputFormatters: [
                           _PriceInputFormatter(),
                         ],
-                        decoration: const InputDecoration(
-                            labelText: 'Price',
+                        decoration: InputDecoration(
+                            labelText: tr(ref, 'Price', 'ราคา'),
                             prefixText: '\u0E3F ',
-                            prefixIcon: Icon(Icons.payments_outlined)),
+                            prefixIcon: const Icon(Icons.payments_outlined)),
                         validator: (value) {
                           final parsed = double.tryParse(value ?? '');
                           if (parsed == null || parsed <= 0) {
-                            return 'Enter a price greater than 0.';
+                            return tr(ref, 'Enter a price greater than 0.',
+                                'กรุณากรอกราคามากกว่า 0');
                           }
                           if (parsed > 1000000) {
-                            return 'Price cannot be over \u0E3F1,000,000.';
+                            return tr(
+                                ref,
+                                'Price cannot be over \u0E3F1,000,000.',
+                                'ราคาต้องไม่เกิน \u0E3F1,000,000');
                           }
                           return null;
                         },
@@ -142,42 +152,52 @@ class _SellerProductFormScreenState
                           FilteringTextInputFormatter.digitsOnly,
                           LengthLimitingTextInputFormatter(2),
                         ],
-                        decoration: const InputDecoration(
-                            labelText: 'Stock quantity',
-                            prefixIcon: Icon(Icons.inventory_2_outlined)),
+                        decoration: InputDecoration(
+                            labelText:
+                                tr(ref, 'Stock quantity', 'จำนวนคงเหลือ'),
+                            prefixIcon: const Icon(Icons.inventory_2_outlined)),
                         validator: (value) {
                           final parsed = int.tryParse(value ?? '');
-                          if (parsed == null) return 'Enter available stock.';
-                          if (parsed > 99) return 'Stock cannot be over 99.';
+                          if (parsed == null) {
+                            return tr(ref, 'Enter available stock.',
+                                'กรุณากรอกจำนวนคงเหลือ');
+                          }
+                          if (parsed > 99) {
+                            return tr(ref, 'Stock cannot be over 99.',
+                                'จำนวนคงเหลือต้องไม่เกิน 99');
+                          }
                           return null;
                         },
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
-                        initialValue: category,
+                        value: category,
                         items: categories
-                            .map((c) =>
-                                DropdownMenuItem(value: c, child: Text(c)))
+                            .map((c) => DropdownMenuItem(
+                                value: c, child: Text(categoryLabel(ref, c))))
                             .toList(),
                         onChanged: (v) =>
                             setState(() => category = v ?? category),
-                        decoration: const InputDecoration(
-                            labelText: 'Category',
-                            prefixIcon: Icon(Icons.category_outlined)),
+                        decoration: InputDecoration(
+                            labelText: tr(ref, 'Category', 'หมวดหมู่'),
+                            prefixIcon: const Icon(Icons.category_outlined)),
                       ),
                       const SizedBox(height: 18),
-                      Text('Product images',
+                      Text(tr(ref, 'Product images', 'รูปสินค้า'),
                           style: Theme.of(context)
                               .textTheme
                               .titleMedium
                               ?.copyWith(fontWeight: FontWeight.w700)),
                       const SizedBox(height: 8),
                       if (images.isEmpty)
-                        const AppEmptyState(
+                        AppEmptyState(
                           icon: Icons.add_photo_alternate_outlined,
-                          title: 'Add at least one image',
-                          message:
+                          title: tr(ref, 'Add at least one image',
+                              'เพิ่มรูปสินค้าอย่างน้อย 1 รูป'),
+                          message: tr(
+                              ref,
                               'Choose a product photo from your gallery or take one with the camera.',
+                              'เลือกรูปจากแกลเลอรีหรือถ่ายด้วยกล้อง'),
                         )
                       else
                         SizedBox(
@@ -218,20 +238,22 @@ class _SellerProductFormScreenState
                                       pickImage(ImageSource.gallery),
                                   icon:
                                       const Icon(Icons.photo_library_outlined),
-                                  label: const Text('Gallery'))),
+                                  label: Text(tr(ref, 'Gallery', 'แกลเลอรี')))),
                           const SizedBox(width: 12),
                           Expanded(
                               child: OutlinedButton.icon(
                                   onPressed: () =>
                                       pickImage(ImageSource.camera),
                                   icon: const Icon(Icons.photo_camera_outlined),
-                                  label: const Text('Camera'))),
+                                  label: Text(tr(ref, 'Camera', 'กล้อง')))),
                         ],
                       ),
                       const SizedBox(height: 20),
                       ElevatedButton(
                         onPressed: saving ? null : save,
-                        child: Text(saving ? 'Saving...' : 'Save product'),
+                        child: Text(saving
+                            ? tr(ref, 'Saving...', 'กำลังบันทึก...')
+                            : tr(ref, 'Save product', 'บันทึกสินค้า')),
                       ),
                     ],
                   ),
@@ -253,8 +275,9 @@ class _SellerProductFormScreenState
   Future<void> save() async {
     if (!formKey.currentState!.validate()) return;
     if (images.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Add at least one product image.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(tr(ref, 'Add at least one product image.',
+              'กรุณาเพิ่มรูปสินค้าอย่างน้อย 1 รูป'))));
       return;
     }
 
@@ -274,12 +297,13 @@ class _SellerProductFormScreenState
       } else {
         await repo.update(widget.productId!, body);
       }
-      await refreshSeller(ref);
+      await refreshSeller(ref, productId: widget.productId);
       if (mounted) goBack(context, fallback: '/seller');
     } on DioException catch (error) {
       if (mounted) {
         final message = error.response?.data['error']?.toString() ??
-            'Unable to save product. Please check the product details.';
+            tr(ref, 'Unable to save product. Please check the product details.',
+                'ไม่สามารถบันทึกสินค้าได้ กรุณาตรวจสอบข้อมูลสินค้า');
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(message)));
       }

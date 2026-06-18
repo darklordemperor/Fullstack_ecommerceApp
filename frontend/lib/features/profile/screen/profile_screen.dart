@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/settings/app_settings.dart';
 import '../../../core/widget/app_ui.dart';
 import '../../auth/provider/auth_provider.dart';
 
@@ -51,8 +52,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
 
     return Scaffold(
-      appBar:
-          AppBar(leading: const AppBackButton(), title: const Text('Profile')),
+      appBar: AppBar(
+          leading: const AppBackButton(),
+          title: Text(tr(ref, 'Profile', 'โปรไฟล์'))),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -91,30 +93,34 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           Wrap(
               spacing: 8,
               alignment: WrapAlignment.center,
-              children: user.role.map((r) => Chip(label: Text(r))).toList()),
+              children: user.role
+                  .map((r) => Chip(label: Text(roleLabel(ref, r))))
+                  .toList()),
           if (editing) ...[
             const SizedBox(height: 16),
             TextField(
                 controller: name,
-                decoration: const InputDecoration(labelText: 'Name')),
+                decoration:
+                    InputDecoration(labelText: tr(ref, 'Name', 'ชื่อ'))),
             const SizedBox(height: 8),
             TextField(
                 controller: lastname,
-                decoration: const InputDecoration(labelText: 'Lastname')),
+                decoration:
+                    InputDecoration(labelText: tr(ref, 'Lastname', 'นามสกุล'))),
             const SizedBox(height: 8),
             TextField(
               controller: age,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: const InputDecoration(labelText: 'Age'),
+              decoration: InputDecoration(labelText: tr(ref, 'Age', 'อายุ')),
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              initialValue: gender,
-              decoration: const InputDecoration(labelText: 'Gender'),
+              value: gender,
+              decoration: InputDecoration(labelText: tr(ref, 'Gender', 'เพศ')),
               items: const ['Female', 'Male', 'Other']
-                  .map((value) =>
-                      DropdownMenuItem(value: value, child: Text(value)))
+                  .map((value) => DropdownMenuItem(
+                      value: value, child: Text(genderLabel(ref, value))))
                   .toList(),
               onChanged: (value) => setState(() => gender = value ?? gender),
             ),
@@ -123,44 +129,52 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               controller: address,
               minLines: 2,
               maxLines: 3,
-              decoration: const InputDecoration(labelText: 'Delivery address'),
+              decoration: InputDecoration(
+                  labelText: tr(ref, 'Delivery address', 'ที่อยู่จัดส่ง')),
             ),
             const SizedBox(height: 12),
             ElevatedButton(
-                onPressed: saveProfile, child: const Text('Save Profile')),
+                onPressed: saveProfile,
+                child: Text(tr(ref, 'Save Profile', 'บันทึกโปรไฟล์'))),
           ] else ...[
             const SizedBox(height: 16),
             _InfoTile(
-                icon: Icons.cake_outlined, label: 'Age', value: '${user.age}'),
+                icon: Icons.cake_outlined,
+                label: tr(ref, 'Age', 'อายุ'),
+                value: '${user.age}'),
             _InfoTile(
                 icon: Icons.person_outline,
-                label: 'Gender',
-                value: user.gender.isEmpty ? 'Not set' : user.gender),
+                label: tr(ref, 'Gender', 'เพศ'),
+                value: user.gender.isEmpty
+                    ? tr(ref, 'Not set', 'ยังไม่ได้ตั้งค่า')
+                    : genderLabel(ref, user.gender)),
             _InfoTile(
                 icon: Icons.location_on_outlined,
-                label: 'Address',
+                label: tr(ref, 'Address', 'ที่อยู่'),
                 value: user.address?.isNotEmpty == true
                     ? user.address!
-                    : 'Not set'),
+                    : tr(ref, 'Not set', 'ยังไม่ได้ตั้งค่า')),
             const SizedBox(height: 16),
             ElevatedButton(
                 onPressed: () => setState(() => editing = true),
-                child: const Text('Edit Profile')),
+                child: Text(tr(ref, 'Edit Profile', 'แก้ไขโปรไฟล์'))),
           ],
           if (user.role.length == 1 && user.sellerStatus != 'pending')
             TextButton(
                 onPressed: () => context.push('/seller-apply'),
-                child: const Text('Apply as Seller')),
+                child: Text(tr(ref, 'Apply as Seller', 'สมัครเป็นผู้ขาย'))),
           if (user.sellerStatus == 'pending')
-            const Center(
-                child: Chip(label: Text('Seller application pending'))),
+            Center(
+                child: Chip(
+                    label: Text(tr(ref, 'Seller application pending',
+                        'ใบสมัครผู้ขายรอตรวจสอบ')))),
           const SizedBox(height: 24),
           OutlinedButton(
             onPressed: () async {
               await ref.read(authProvider.notifier).logout();
               if (context.mounted) context.go('/login');
             },
-            child: const Text('Logout'),
+            child: Text(tr(ref, 'Logout', 'ออกจากระบบ')),
           ),
         ],
       ),
@@ -185,8 +199,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         parsedAge == null ||
         parsedAge < 18 ||
         address.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Please complete name, age, gender, and address.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(tr(
+              ref,
+              'Please complete name, age, gender, and address.',
+              'กรุณากรอกชื่อ อายุ เพศ และที่อยู่ให้ครบถ้วน'))));
       return;
     }
     await ref.read(authRepositoryProvider).updateProfile({

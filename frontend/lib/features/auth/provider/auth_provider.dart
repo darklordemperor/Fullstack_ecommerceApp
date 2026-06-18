@@ -56,18 +56,36 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> login(String email, String password) async {
+    final previous = state;
     state = AuthState(
-        user: state.user, loading: true, bootstrapped: state.bootstrapped);
-    final result = await repository.login(email, password);
-    await DioClient.storage.write(key: 'token', value: result.token);
-    state = AuthState(user: result.user, bootstrapped: true);
+        user: previous.user,
+        loading: true,
+        bootstrapped: previous.bootstrapped);
+    try {
+      final result = await repository.login(email, password);
+      await DioClient.storage.write(key: 'token', value: result.token);
+      state = AuthState(user: result.user, bootstrapped: true);
+    } catch (_) {
+      state =
+          AuthState(user: previous.user, bootstrapped: previous.bootstrapped);
+      rethrow;
+    }
   }
 
   Future<void> register(Map<String, dynamic> body) async {
+    final previous = state;
     state = AuthState(
-        user: state.user, loading: true, bootstrapped: state.bootstrapped);
-    await repository.register(body);
-    state = const AuthState(bootstrapped: true);
+        user: previous.user,
+        loading: true,
+        bootstrapped: previous.bootstrapped);
+    try {
+      await repository.register(body);
+      state = const AuthState(bootstrapped: true);
+    } catch (_) {
+      state =
+          AuthState(user: previous.user, bootstrapped: previous.bootstrapped);
+      rethrow;
+    }
   }
 
   Future<void> refreshMe() async {

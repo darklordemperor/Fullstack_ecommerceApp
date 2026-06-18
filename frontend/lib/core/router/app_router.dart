@@ -34,7 +34,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         if (!loggedIn) return '/login';
         return adminOnly ? '/admin' : '/home';
       }
-      if (!loggedIn && !authRoute) return '/login';
+      if (!loggedIn && !authRoute) return loginLocationFor(state.uri.toString());
       if (loggedIn && authRoute) return adminOnly ? '/admin' : '/home';
       if (adminRoute && !adminOnly) {
         return '/home';
@@ -72,6 +72,27 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+String loginLocationFor(String requestedLocation) {
+  final target = postLoginLocation(requestedLocation);
+  if (target == '/home') return '/login';
+  return Uri(path: '/login', queryParameters: {'next': target}).toString();
+}
+
+String postLoginLocation(String? requestedLocation) {
+  if (requestedLocation == null || requestedLocation.isEmpty) return '/home';
+  final uri = Uri.tryParse(requestedLocation);
+  if (uri == null || uri.hasScheme || uri.hasAuthority) return '/home';
+  if (!requestedLocation.startsWith('/') || requestedLocation.startsWith('//')) {
+    return '/home';
+  }
+  if (requestedLocation == '/login' ||
+      requestedLocation == '/register' ||
+      requestedLocation == '/splash') {
+    return '/home';
+  }
+  return requestedLocation;
+}
 
 class RouterRefresh extends ChangeNotifier {
   RouterRefresh(Ref ref) {

@@ -1,0 +1,409 @@
+<main class="min-h-screen bg-[#f5f7fb]">
+  <section
+    *ngIf="!isLoggedIn(); else dashboard"
+    class="grid min-h-screen grid-cols-1 bg-[#f5f7fb] lg:grid-cols-[1.05fr_0.95fr]"
+  >
+    <div class="flex items-center justify-center p-6 sm:p-10">
+      <div class="w-full max-w-md">
+        <div
+          class="mb-8 inline-flex items-center gap-3 rounded-2xl border border-white bg-white/80 px-4 py-3 shadow-sm"
+        >
+          <span
+            class="grid h-10 w-10 place-items-center rounded-xl bg-brand text-lg font-black text-white"
+            >S</span
+          >
+          <div>
+            <p class="text-sm font-black text-ink">ShopAdmin</p>
+            <p class="text-xs font-semibold text-muted">Commerce control desk</p>
+          </div>
+        </div>
+
+        <h1 class="text-4xl font-black tracking-tight text-ink sm:text-5xl">
+          Operate your marketplace from one clean dashboard.
+        </h1>
+        <p class="mt-5 max-w-xl text-base leading-7 text-muted">
+          Review users, monitor inventory, remove unsafe listings, and keep store operations moving
+          without opening the Flutter client.
+        </p>
+
+        <div class="mt-8 grid grid-cols-3 gap-3">
+          <div class="rounded-2xl border border-line bg-white p-4 shadow-sm">
+            <p class="text-2xl font-black text-ink">API</p>
+            <p class="mt-1 text-xs font-bold text-muted">Port 8080</p>
+          </div>
+          <div class="rounded-2xl border border-line bg-white p-4 shadow-sm">
+            <p class="text-2xl font-black text-ink">Web</p>
+            <p class="mt-1 text-xs font-bold text-muted">Port 4200</p>
+          </div>
+          <div class="rounded-2xl border border-line bg-white p-4 shadow-sm">
+            <p class="text-2xl font-black text-ink">Admin</p>
+            <p class="mt-1 text-xs font-bold text-muted">Role guard</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-center p-6 sm:p-10">
+      <form
+        class="w-full max-w-md rounded-[28px] border border-line bg-white p-6 shadow-[0_24px_80px_rgba(16,24,40,0.12)] sm:p-8"
+        (ngSubmit)="login()"
+      >
+        <div class="mb-7">
+          <p class="text-sm font-black uppercase tracking-[0.18em] text-brand">Admin sign in</p>
+          <h2 class="mt-3 text-2xl font-black text-ink">Welcome back</h2>
+          <p class="mt-2 text-sm leading-6 text-muted">
+            Use the seeded admin account or any backend admin user.
+          </p>
+        </div>
+
+        <label class="block">
+          <span class="text-sm font-bold text-ink">Email</span>
+          <input
+            name="email"
+            type="email"
+            autocomplete="email"
+            [ngModel]="email()"
+            (ngModelChange)="email.set($event)"
+            class="mt-2 w-full rounded-2xl border border-line bg-white px-4 py-3 text-sm font-semibold text-ink outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/10"
+          />
+        </label>
+
+        <label class="mt-4 block">
+          <span class="text-sm font-bold text-ink">Password</span>
+          <input
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            [ngModel]="password()"
+            (ngModelChange)="password.set($event)"
+            class="mt-2 w-full rounded-2xl border border-line bg-white px-4 py-3 text-sm font-semibold text-ink outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/10"
+          />
+        </label>
+
+        <p
+          *ngIf="error()"
+          class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700"
+        >
+          {{ error() }}
+        </p>
+
+        <button
+          type="submit"
+          [disabled]="loading()"
+          class="mt-6 inline-flex h-12 w-full items-center justify-center rounded-2xl bg-brand px-5 text-sm font-black text-white shadow-lg shadow-brand/20 transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {{ loading() ? 'Signing in...' : 'Sign in to dashboard' }}
+        </button>
+
+        <div class="mt-5 rounded-2xl bg-[#f8fafc] p-4 text-sm text-muted">
+          <p class="font-black text-ink">Seeded account</p>
+          <p class="mt-1 font-semibold">admin@example.com / abc12345</p>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <ng-template #dashboard>
+    <div class="min-h-screen lg:grid lg:grid-cols-[280px_1fr]">
+      <aside
+        class="hidden border-r border-line bg-white px-5 py-6 lg:sticky lg:top-0 lg:block lg:h-screen"
+      >
+        <div class="flex items-center gap-3">
+          <span
+            class="grid h-11 w-11 place-items-center rounded-2xl bg-brand text-lg font-black text-white"
+            >S</span
+          >
+          <div>
+            <p class="text-base font-black text-ink">ShopAdmin</p>
+            <p class="text-xs font-semibold text-muted">Angular dashboard</p>
+          </div>
+        </div>
+
+        <nav class="mt-8 space-y-2">
+          <button
+            type="button"
+            (click)="activeTab.set('users')"
+            [class.bg-ink]="activeTab() === 'users'"
+            [class.text-white]="activeTab() === 'users'"
+            class="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black text-muted transition hover:bg-[#f2f4f7]"
+          >
+            <span>Users</span>
+            <span class="ml-auto rounded-full bg-white/20 px-2 py-0.5 text-xs">{{
+              users().length
+            }}</span>
+          </button>
+          <button
+            type="button"
+            (click)="activeTab.set('products')"
+            [class.bg-ink]="activeTab() === 'products'"
+            [class.text-white]="activeTab() === 'products'"
+            class="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black text-muted transition hover:bg-[#f2f4f7]"
+          >
+            <span>Products</span>
+            <span class="ml-auto rounded-full bg-white/20 px-2 py-0.5 text-xs">{{
+              products().length
+            }}</span>
+          </button>
+        </nav>
+
+        <div class="absolute bottom-6 left-5 right-5">
+          <div class="rounded-3xl border border-line bg-[#f8fafc] p-4">
+            <p class="text-sm font-black text-ink">{{ admin()?.name }} {{ admin()?.lastname }}</p>
+            <p class="mt-1 truncate text-xs font-semibold text-muted">
+              {{ admin()?.email }}
+            </p>
+            <button
+              type="button"
+              (click)="logout()"
+              class="mt-4 w-full rounded-2xl border border-line bg-white px-4 py-2 text-sm font-black text-ink"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <section class="min-w-0 p-4 sm:p-6 lg:p-8">
+        <header
+          class="flex flex-col gap-4 rounded-[28px] border border-line bg-white p-5 shadow-sm lg:flex-row lg:items-center lg:justify-between"
+        >
+          <div>
+            <p class="text-sm font-black uppercase tracking-[0.16em] text-brand">
+              Ecommerce overview
+            </p>
+            <h1 class="mt-2 text-2xl font-black text-ink sm:text-3xl">Admin Dashboard</h1>
+          </div>
+          <div class="flex flex-col gap-3 sm:flex-row">
+            <input
+              type="search"
+              placeholder="Search users, products, sellers..."
+              [ngModel]="search()"
+              (ngModelChange)="search.set($event)"
+              class="h-11 min-w-0 rounded-2xl border border-line bg-[#f8fafc] px-4 text-sm font-semibold outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 sm:w-80"
+            />
+            <button
+              type="button"
+              (click)="loadDashboard()"
+              class="h-11 rounded-2xl border border-line bg-white px-5 text-sm font-black text-ink"
+            >
+              Refresh
+            </button>
+          </div>
+        </header>
+
+        <p
+          *ngIf="error()"
+          class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700"
+        >
+          {{ error() }}
+        </p>
+
+        <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <article class="rounded-[24px] border border-line bg-white p-5 shadow-sm">
+            <p class="text-sm font-bold text-muted">Total users</p>
+            <p class="mt-3 text-3xl font-black text-ink">{{ stats().total_users }}</p>
+            <p class="mt-2 text-xs font-bold text-mint">{{ activeUsers() }} active</p>
+          </article>
+          <article class="rounded-[24px] border border-line bg-white p-5 shadow-sm">
+            <p class="text-sm font-bold text-muted">Products</p>
+            <p class="mt-3 text-3xl font-black text-ink">{{ stats().total_products }}</p>
+            <p class="mt-2 text-xs font-bold text-brand">{{ lowStockProducts() }} low stock</p>
+          </article>
+          <article class="rounded-[24px] border border-line bg-white p-5 shadow-sm">
+            <p class="text-sm font-bold text-muted">Orders</p>
+            <p class="mt-3 text-3xl font-black text-ink">{{ stats().total_orders }}</p>
+            <p class="mt-2 text-xs font-bold text-muted">{{ sellers() }} sellers</p>
+          </article>
+          <article class="rounded-[24px] border border-line bg-white p-5 shadow-sm">
+            <p class="text-sm font-bold text-muted">Revenue</p>
+            <p class="mt-3 text-3xl font-black text-ink">
+              {{ formatCurrency(stats().total_revenue) }}
+            </p>
+            <p class="mt-2 text-xs font-bold text-muted">{{ bannedUsers() }} banned users</p>
+          </article>
+        </div>
+
+        <div class="mt-5 flex rounded-2xl border border-line bg-white p-1 shadow-sm lg:hidden">
+          <button
+            type="button"
+            (click)="activeTab.set('users')"
+            [class.bg-ink]="activeTab() === 'users'"
+            [class.text-white]="activeTab() === 'users'"
+            class="h-10 flex-1 rounded-xl text-sm font-black text-muted"
+          >
+            Users
+          </button>
+          <button
+            type="button"
+            (click)="activeTab.set('products')"
+            [class.bg-ink]="activeTab() === 'products'"
+            [class.text-white]="activeTab() === 'products'"
+            class="h-10 flex-1 rounded-xl text-sm font-black text-muted"
+          >
+            Products
+          </button>
+        </div>
+
+        <section
+          *ngIf="activeTab() === 'users'"
+          class="mt-5 rounded-[28px] border border-line bg-white shadow-sm"
+        >
+          <div
+            class="flex flex-col gap-3 border-b border-line p-5 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div>
+              <h2 class="text-lg font-black text-ink">User management</h2>
+              <p class="mt-1 text-sm font-semibold text-muted">
+                Filter, audit, ban, and restore marketplace users.
+              </p>
+            </div>
+            <select
+              [ngModel]="userFilter()"
+              (ngModelChange)="userFilter.set($event)"
+              class="h-11 rounded-2xl border border-line bg-[#f8fafc] px-4 text-sm font-bold outline-none"
+            >
+              <option value="all">All users</option>
+              <option value="active">Active</option>
+              <option value="banned">Banned</option>
+              <option value="admin">Admins</option>
+            </select>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-left text-sm">
+              <thead class="bg-[#f8fafc] text-xs font-black uppercase tracking-wide text-muted">
+                <tr>
+                  <th class="px-5 py-4">User</th>
+                  <th class="px-5 py-4">Role</th>
+                  <th class="px-5 py-4">Seller</th>
+                  <th class="px-5 py-4">Status</th>
+                  <th class="px-5 py-4 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-line">
+                <tr *ngFor="let user of filteredUsers()" class="hover:bg-[#fcfcfd]">
+                  <td class="px-5 py-4">
+                    <div class="flex items-center gap-3">
+                      <div
+                        class="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-brand/10 text-sm font-black text-brand-dark"
+                      >
+                        {{ initials(user) || 'U' }}
+                      </div>
+                      <div>
+                        <p class="font-black text-ink">{{ user.name }} {{ user.lastname }}</p>
+                        <p class="text-xs font-semibold text-muted">{{ user.email }}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-5 py-4">
+                    <div class="flex flex-wrap gap-1.5">
+                      <span
+                        *ngFor="let role of user.role"
+                        class="rounded-full bg-[#eef4ff] px-2.5 py-1 text-xs font-black text-[#3538cd]"
+                      >
+                        {{ role }}
+                      </span>
+                    </div>
+                  </td>
+                  <td class="px-5 py-4 font-semibold text-muted">
+                    {{ user.seller_status || 'none' }}
+                  </td>
+                  <td class="px-5 py-4">
+                    <span
+                      class="rounded-full px-3 py-1 text-xs font-black"
+                      [ngClass]="
+                        user.banned ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'
+                      "
+                    >
+                      {{ user.banned ? 'Banned' : 'Active' }}
+                    </span>
+                  </td>
+                  <td class="px-5 py-4 text-right">
+                    <button
+                      *ngIf="!user.role.includes('admin')"
+                      type="button"
+                      (click)="setUserBanned(user, !user.banned)"
+                      [disabled]="actionLoading() === user.id"
+                      class="rounded-2xl border border-line px-3 py-2 text-xs font-black text-ink transition hover:bg-[#f8fafc] disabled:opacity-60"
+                    >
+                      {{ user.banned ? 'Unban' : 'Ban' }}
+                    </button>
+                    <span *ngIf="user.role.includes('admin')" class="text-xs font-black text-muted">
+                      Protected
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section
+          *ngIf="activeTab() === 'products'"
+          class="mt-5 rounded-[28px] border border-line bg-white shadow-sm"
+        >
+          <div class="border-b border-line p-5">
+            <h2 class="text-lg font-black text-ink">Product moderation</h2>
+            <p class="mt-1 text-sm font-semibold text-muted">
+              Review catalog quality, stock levels, sellers, and remove listings.
+            </p>
+          </div>
+
+          <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
+            <article
+              *ngFor="let product of filteredProducts()"
+              class="overflow-hidden rounded-[24px] border border-line bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
+            >
+              <div class="aspect-[16/10] bg-[#f2f4f7]">
+                <img
+                  [src]="productImage(product)"
+                  [alt]="product.name"
+                  class="h-full w-full object-cover"
+                />
+              </div>
+              <div class="p-4">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <h3 class="truncate text-base font-black text-ink">{{ product.name }}</h3>
+                    <p class="mt-1 truncate text-xs font-bold text-muted">
+                      {{ product.seller_name || 'Unknown seller' }}
+                    </p>
+                  </div>
+                  <span
+                    class="rounded-full bg-brand/10 px-3 py-1 text-xs font-black text-brand-dark"
+                  >
+                    {{ product.category || 'Uncategorized' }}
+                  </span>
+                </div>
+                <p class="mt-3 line-clamp-2 min-h-10 text-sm leading-5 text-muted">
+                  {{ product.description || 'No description provided.' }}
+                </p>
+                <div class="mt-4 flex items-center justify-between">
+                  <div>
+                    <p class="text-lg font-black text-ink">
+                      {{ formatCurrency(product.price) }}
+                    </p>
+                    <p
+                      class="text-xs font-black"
+                      [ngClass]="product.stock <= 5 ? 'text-brand' : 'text-muted'"
+                    >
+                      Stock {{ product.stock }}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    (click)="deleteProduct(product)"
+                    [disabled]="actionLoading() === product.id"
+                    class="rounded-2xl bg-ink px-4 py-2 text-xs font-black text-white transition hover:bg-black disabled:opacity-60"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+      </section>
+    </div>
+  </ng-template>
+</main>
