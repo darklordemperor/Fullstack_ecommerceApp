@@ -81,7 +81,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ? tr(ref, 'Signing in...', 'กำลังเข้าสู่ระบบ...')
                             : tr(ref, 'Login', 'เข้าสู่ระบบ'))),
                     TextButton(
-                        onPressed: () => context.go('/register'),
+                        onPressed: () {
+                          final next = GoRouterState.of(context)
+                              .uri
+                              .queryParameters['next'];
+                          context.go(registerLocationFor(next));
+                        },
                         child: Text(tr(ref, "Don't have an account? Register",
                             'ยังไม่มีบัญชี? สมัครสมาชิก'))),
                   ],

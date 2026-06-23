@@ -1,8 +1,13 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
+import '../../../core/router/app_router.dart';
 import '../../../core/settings/app_settings.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widget/app_ui.dart';
@@ -24,8 +29,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final email = TextEditingController();
   final password = TextEditingController();
   final confirm = TextEditingController();
+  final picker = ImagePicker();
   final passwordRegex = RegExp(r'^[a-z0-9]{8,}$');
   String gender = 'Other';
+  String profileImage = '';
 
   @override
   void dispose() {
@@ -108,6 +115,63 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           title: tr(ref, 'Personal details', 'ข้อมูลส่วนตัว'),
                         ),
                         const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 36,
+                              backgroundColor:
+                                  AppTheme.primary.withValues(alpha: .10),
+                              child: ClipOval(
+                                child: profileImage.isEmpty
+                                    ? const Icon(
+                                        Icons.person_outline_rounded,
+                                        color: AppTheme.primaryDark,
+                                        size: 34,
+                                      )
+                                    : AppProductImage(
+                                        image: profileImage,
+                                        width: 72,
+                                        height: 72,
+                                      ),
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    tr(ref, 'Profile photo', 'รูปโปรไฟล์'),
+                                    style:
+                                        Theme.of(context).textTheme.titleSmall,
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: [
+                                      OutlinedButton.icon(
+                                        onPressed: () => pickProfileImage(
+                                            ImageSource.gallery),
+                                        icon: const Icon(Icons.photo_outlined),
+                                        label: Text(
+                                            tr(ref, 'Gallery', 'แกลเลอรี')),
+                                      ),
+                                      OutlinedButton.icon(
+                                        onPressed: () => pickProfileImage(
+                                            ImageSource.camera),
+                                        icon: const Icon(
+                                            Icons.photo_camera_outlined),
+                                        label: Text(tr(ref, 'Camera', 'กล้อง')),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
                         TextFormField(
                             controller: name,
                             textInputAction: TextInputAction.next,
@@ -138,6 +202,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                   controller: age,
                                   textInputAction: TextInputAction.next,
                                   keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                    LengthLimitingTextInputFormatter(3),
+                                  ],
                                   decoration: InputDecoration(
                                     labelText: tr(ref, 'Age', 'อายุ'),
                                     prefixIcon: const Icon(Icons.cake_outlined),
@@ -279,16 +347,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         'age': int.parse(age.text),
         'gender': gender,
         'address': address.text.trim(),
-        'profile_image': '',
+        'profile_image': profileImage,
         'email': email.text.trim(),
         'password': password.text,
         'confirm_password': confirm.text,
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(tr(ref, 'Account created. Please log in.',
-                'สร้างบัญชีแล้ว กรุณาเข้าสู่ระบบ'))));
-        context.go('/login');
+            content: Text(tr(ref, 'Account created. You are signed in.',
+                'สร้างบัญชีแล้ว เข้าสู่ระบบเรียบร้อย'))));
+        final next = GoRouterState.of(context).uri.queryParameters['next'];
+        context.go(postLoginLocation(next));
       }
     } on DioException catch (e) {
       if (mounted) {
@@ -299,6 +368,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       }
     }
   }
+
+  Future<void> pickProfileImage(ImageSource source) async {
+    if (!await ensureImagePermission(context, source)) return;
+    final picked =
+        await picker.pickImage(source: source, imageQuality: 78, maxWidth: 800);
+    if (picked == null) return;
+    final bytes = await picked.readAsBytes();
+    if (!mounted) return;
+    setState(() {
+      profileImage = profileImageDataUri(bytes);
+    });
+  }
+}
+
+String profileImageDataUri(List<int> bytes) {
+  return 'data:image/jpeg;base64,${base64Encode(bytes)}';
 }
 
 class _SectionTitle extends StatelessWidget {

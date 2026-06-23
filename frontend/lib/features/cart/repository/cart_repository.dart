@@ -29,8 +29,9 @@ class CartRepository {
     return CartModel.fromJson(DioClient.payload(response));
   }
 
-  Future<CartModel> checkout() async {
-    final response = await DioClient.dio.post('/cart/checkout');
+  Future<CartModel> checkout([List<String> productIds = const []]) async {
+    final response = await DioClient.dio.post('/cart/checkout',
+        data: productIds.isEmpty ? null : {'product_ids': productIds});
     final data = DioClient.payload(response);
     return CartModel.fromJson(data['cart']);
   }

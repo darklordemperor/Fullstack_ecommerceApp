@@ -204,22 +204,23 @@ class ShopDrawer extends ConsumerWidget {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(20, 54, 20, 24),
-            decoration: const BoxDecoration(
-              color: AppTheme.text,
-              borderRadius: BorderRadius.only(topRight: Radius.circular(28)),
+            decoration: BoxDecoration(
+              color: colors.primaryContainer,
+              borderRadius:
+                  const BorderRadius.only(topRight: Radius.circular(28)),
             ),
             child: Row(
               children: [
                 CircleAvatar(
                   radius: 34,
-                  backgroundColor: Colors.white,
+                  backgroundColor: colors.surface,
                   child: ClipOval(
                     child: user?.profileImage?.isNotEmpty == true
                         ? AppProductImage(
                             image: user!.profileImage!, width: 68, height: 68)
                         : Text(user?.initials ?? 'U',
-                            style: const TextStyle(
-                                color: AppTheme.text,
+                            style: TextStyle(
+                                color: colors.onSurface,
                                 fontWeight: FontWeight.w900,
                                 fontSize: 20)),
                   ),
@@ -232,8 +233,8 @@ class ShopDrawer extends ConsumerWidget {
                       Text(user?.fullName ?? tr(ref, 'Customer', 'ลูกค้า'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                              color: Colors.white,
+                          style: TextStyle(
+                              color: colors.onPrimaryContainer,
                               fontSize: 20,
                               fontWeight: FontWeight.w900)),
                       const SizedBox(height: 4),
@@ -241,7 +242,8 @@ class ShopDrawer extends ConsumerWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                              color: Colors.white.withValues(alpha: .78),
+                              color: colors.onPrimaryContainer
+                                  .withValues(alpha: .72),
                               fontWeight: FontWeight.w600)),
                     ],
                   ),
@@ -371,13 +373,13 @@ class _DrawerTile extends StatelessWidget {
     final foreground = danger
         ? AppTheme.primaryDark
         : selected
-            ? Colors.white
+            ? colors.primary
             : colors.onSurfaceVariant;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Material(
         color: selected
-            ? AppTheme.text
+            ? colors.primary.withValues(alpha: .12)
             : danger
                 ? AppTheme.primary.withValues(alpha: .08)
                 : Colors.transparent,

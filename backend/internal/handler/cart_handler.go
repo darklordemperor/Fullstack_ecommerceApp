@@ -26,6 +26,21 @@ func (h *CartHandler) Get(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load cart"})
 		return
 	}
+	cart.Items = normalizeCartItems(cart.Items)
+	for i := range cart.Items {
+		product, err := h.products.FindByID(c.Request.Context(), cart.Items[i].ProductID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load cart product"})
+			return
+		}
+		if product != nil {
+			cart.Items[i] = cartItemWithProductDetails(cart.Items[i], product)
+		}
+	}
+	if err := h.carts.Save(c.Request.Context(), cart); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save cart"})
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{"data": cart, "message": "cart loaded"})
 }
 
@@ -50,19 +65,17 @@ func (h *CartHandler) Add(c *gin.Context) {
 		return
 	}
 	cart.Items = normalizeCartItems(cart.Items)
-	image := ""
-	if len(product.Images) > 0 {
-		image = product.Images[0]
-	}
 	found := false
 	for i := range cart.Items {
 		if cart.Items[i].ProductID == productID {
 			cart.Items[i].Quantity += req.Quantity
+			cart.Items[i].SellerID = product.SellerID
+			cart.Items[i].SellerName = product.SellerName
 			found = true
 		}
 	}
 	if !found {
-		cart.Items = append(cart.Items, model.CartItem{ProductID: productID, Name: product.Name, Price: product.Price, Image: image, Quantity: req.Quantity})
+		cart.Items = append(cart.Items, cartItemFromProduct(product, req.Quantity))
 	}
 	h.saveCart(c, cart, "cart updated")
 }
@@ -137,9 +150,18 @@ func (h *CartHandler) Checkout(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "cart is empty"})
 		return
 	}
+	selectedProductIDs, ok := bindCheckoutProductIDs(c)
+	if !ok {
+		return
+	}
+	checkoutItems, remainingItems := splitCheckoutItems(cart.Items, selectedProductIDs)
+	if len(checkoutItems) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "select at least one cart item"})
+		return
+	}
 
 	grouped := map[bson.ObjectID][]model.CartItem{}
-	for _, item := range cart.Items {
+	for _, item := range checkoutItems {
 		product, err := h.products.FindByID(c.Request.Context(), item.ProductID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load product"})
@@ -171,7 +193,7 @@ func (h *CartHandler) Checkout(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create order"})
 		return
 	}
-	cart.Items = []model.CartItem{}
+	cart.Items = remainingItems
 	if err := h.carts.Save(c.Request.Context(), cart); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to clear cart"})
 		return
@@ -204,11 +226,7 @@ func (h *CartHandler) BuyNow(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "quantity is greater than available stock"})
 		return
 	}
-	image := ""
-	if len(product.Images) > 0 {
-		image = product.Images[0]
-	}
-	item := model.CartItem{ProductID: productID, Name: product.Name, Price: product.Price, Image: image, Quantity: req.Quantity}
+	item := cartItemFromProduct(product, req.Quantity)
 	order := model.Order{
 		CustomerID:   userID,
 		CustomerName: user.Name + " " + user.Lastname,
@@ -243,6 +261,69 @@ func bindCartQuantity(c *gin.Context, req *model.CartQuantityRequest) bool {
 		return false
 	}
 	return true
+}
+
+func cartItemFromProduct(product *model.Product, quantity int) model.CartItem {
+	return cartItemWithProductDetails(model.CartItem{
+		ProductID: product.ID,
+		Quantity:  quantity,
+	}, product)
+}
+
+func cartItemWithProductDetails(item model.CartItem, product *model.Product) model.CartItem {
+	image := ""
+	if len(product.Images) > 0 {
+		image = product.Images[0]
+	}
+	return model.CartItem{
+		ProductID:  product.ID,
+		SellerID:   product.SellerID,
+		SellerName: product.SellerName,
+		Name:       product.Name,
+		Price:      product.Price,
+		Image:      image,
+		Quantity:   item.Quantity,
+	}
+}
+
+func bindCheckoutProductIDs(c *gin.Context) (map[bson.ObjectID]bool, bool) {
+	var req model.CartCheckoutRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		if err.Error() == "EOF" {
+			return nil, true
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return nil, false
+	}
+	if len(req.ProductIDs) == 0 {
+		return nil, true
+	}
+	selected := make(map[bson.ObjectID]bool, len(req.ProductIDs))
+	for _, rawID := range req.ProductIDs {
+		id, err := bson.ObjectIDFromHex(rawID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "valid product_ids are required"})
+			return nil, false
+		}
+		selected[id] = true
+	}
+	return selected, true
+}
+
+func splitCheckoutItems(items []model.CartItem, selectedProductIDs map[bson.ObjectID]bool) ([]model.CartItem, []model.CartItem) {
+	if selectedProductIDs == nil {
+		return items, []model.CartItem{}
+	}
+	selected := make([]model.CartItem, 0, len(selectedProductIDs))
+	remaining := make([]model.CartItem, 0, len(items))
+	for _, item := range items {
+		if selectedProductIDs[item.ProductID] {
+			selected = append(selected, item)
+			continue
+		}
+		remaining = append(remaining, item)
+	}
+	return selected, remaining
 }
 
 func normalizeCartItems(items []model.CartItem) []model.CartItem {

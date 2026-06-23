@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/settings/app_settings.dart';
 import '../../../core/widget/app_ui.dart';
@@ -55,7 +56,7 @@ class _SellerApplyScreenState extends ConsumerState<SellerApplyScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                     content: Text(
                         tr(ref, 'Application submitted', 'ส่งใบสมัครแล้ว'))));
-                goBack(context, fallback: '/profile');
+                context.go('/home');
               }
             },
             child: Text(tr(ref, 'Submit', 'ส่งข้อมูล'))),

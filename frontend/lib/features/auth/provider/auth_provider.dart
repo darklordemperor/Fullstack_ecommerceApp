@@ -80,7 +80,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
         bootstrapped: previous.bootstrapped);
     try {
       await repository.register(body);
-      state = const AuthState(bootstrapped: true);
+      final result = await repository.login(
+        body['email'].toString().trim(),
+        body['password'].toString(),
+      );
+      await DioClient.storage.write(key: 'token', value: result.token);
+      state = AuthState(user: result.user, bootstrapped: true);
     } catch (_) {
       state =
           AuthState(user: previous.user, bootstrapped: previous.bootstrapped);

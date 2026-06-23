@@ -13,10 +13,15 @@ import '../../product/provider/product_provider.dart';
 import '../../seller/provider/seller_provider.dart';
 
 class CheckoutScreen extends ConsumerWidget {
-  const CheckoutScreen({super.key, this.productId, this.quantity});
+  const CheckoutScreen(
+      {super.key,
+      this.productId,
+      this.quantity,
+      this.selectedProductIds = const []});
 
   final String? productId;
   final int? quantity;
+  final List<String> selectedProductIds;
 
   bool get isBuyNow => productId != null;
 
@@ -26,6 +31,14 @@ class CheckoutScreen extends ConsumerWidget {
     final directProduct =
         productId == null ? null : ref.watch(productDetailProvider(productId!));
     final cart = ref.watch(cartProvider);
+    final selectedIds = selectedProductIds.toSet();
+    final selectedCartItems = cart.valueOrNull == null
+        ? const <CartItemModel>[]
+        : selectedIds.isEmpty
+            ? cart.valueOrNull!.items
+            : cart.valueOrNull!.selectedItems(selectedIds);
+    final cartTotal =
+        selectedCartItems.fold<double>(0, (sum, item) => sum + item.subtotal);
 
     return Scaffold(
       appBar: AppBar(
@@ -34,7 +47,7 @@ class CheckoutScreen extends ConsumerWidget {
       bottomNavigationBar: _CheckoutFooter(
         total: isBuyNow
             ? (directProduct?.valueOrNull?.price ?? 0) * (quantity ?? 1)
-            : (cart.valueOrNull?.total ?? 0),
+            : cartTotal,
         onPlaceOrder: () => _placeOrder(context, ref),
       ),
       body: ListView(
@@ -75,7 +88,11 @@ class CheckoutScreen extends ConsumerWidget {
                   message: friendlyError(e),
                   onRetry: () => ref.invalidate(cartProvider)),
               data: (value) => _ProductSection(
-                  items: value.items.map(_CheckoutItem.fromCart).toList()),
+                  items: (selectedIds.isEmpty
+                          ? value.items
+                          : value.selectedItems(selectedIds))
+                      .map(_CheckoutItem.fromCart)
+                      .toList()),
             ),
           const SizedBox(height: 10),
           _Section(
@@ -102,7 +119,7 @@ class CheckoutScreen extends ConsumerWidget {
           _Summary(
               total: isBuyNow
                   ? (directProduct?.valueOrNull?.price ?? 0) * (quantity ?? 1)
-                  : (cart.valueOrNull?.total ?? 0)),
+                  : cartTotal),
         ],
       ),
     );
@@ -121,7 +138,7 @@ class CheckoutScreen extends ConsumerWidget {
     if (isBuyNow) {
       await ref.read(cartRepositoryProvider).buyNow(productId!, quantity ?? 1);
     } else {
-      await ref.read(cartRepositoryProvider).checkout();
+      await ref.read(cartRepositoryProvider).checkout(selectedProductIds);
       ref.invalidate(cartProvider);
     }
     await refreshSeller(ref);

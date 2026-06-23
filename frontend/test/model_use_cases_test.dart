@@ -97,6 +97,79 @@ void main() {
       expect(cart.total, 0);
       expect(cart.items, isEmpty);
     });
+
+    test('computes selected cart item count and total only from checked items',
+        () {
+      final cart = CartModel.fromJson({
+        'id': 'cart1',
+        'items': [
+          {
+            'product_id': 'p1',
+            'seller_id': 's1',
+            'seller_name': 'Keyboard Shop',
+            'name': 'Keyboard',
+            'price': 1200.0,
+            'image': 'https://example.com/k.png',
+            'quantity': 2
+          },
+          {
+            'product_id': 'p2',
+            'seller_id': 's2',
+            'seller_name': 'Mouse Shop',
+            'name': 'Mouse',
+            'price': 450.5,
+            'image': 'https://example.com/m.png',
+            'quantity': 1
+          },
+        ],
+      });
+
+      expect(cart.selectedCount({'p2'}), 1);
+      expect(cart.selectedTotal({'p2'}), 450.5);
+      expect(cart.selectedItems({'p2'}).map((item) => item.productId), ['p2']);
+    });
+
+    test('groups cart items by seller shop', () {
+      final cart = CartModel.fromJson({
+        'id': 'cart1',
+        'items': [
+          {
+            'product_id': 'p1',
+            'seller_id': 's1',
+            'seller_name': 'Ada Shop',
+            'name': 'Keyboard',
+            'price': 1200.0,
+            'image': 'https://example.com/k.png',
+            'quantity': 1
+          },
+          {
+            'product_id': 'p2',
+            'seller_id': 's1',
+            'seller_name': 'Ada Shop',
+            'name': 'Mouse',
+            'price': 450.5,
+            'image': 'https://example.com/m.png',
+            'quantity': 1
+          },
+          {
+            'product_id': 'p3',
+            'seller_id': 's2',
+            'seller_name': 'Grace Store',
+            'name': 'Monitor',
+            'price': 3500.0,
+            'image': 'https://example.com/m2.png',
+            'quantity': 1
+          },
+        ],
+      });
+
+      final groups = cart.shopGroups;
+
+      expect(groups, hasLength(2));
+      expect(groups.first.sellerName, 'Ada Shop');
+      expect(groups.first.items.map((item) => item.productId), ['p1', 'p2']);
+      expect(groups.last.sellerName, 'Grace Store');
+    });
   });
 
   group('ProductModel display use cases', () {

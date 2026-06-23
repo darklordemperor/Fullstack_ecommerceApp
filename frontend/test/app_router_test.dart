@@ -9,6 +9,13 @@ void main() {
     );
   });
 
+  test('register redirect keeps the requested product deep link', () {
+    expect(
+      registerLocationFor('/products/p1'),
+      '/register?next=%2Fproducts%2Fp1',
+    );
+  });
+
   test('post login target only accepts internal app paths', () {
     expect(postLoginLocation('/products/p1'), '/products/p1');
     expect(postLoginLocation('https://example.com/products/p1'), '/home');

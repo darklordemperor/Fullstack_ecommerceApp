@@ -34,7 +34,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         if (!loggedIn) return '/login';
         return adminOnly ? '/admin' : '/home';
       }
-      if (!loggedIn && !authRoute) return loginLocationFor(state.uri.toString());
+      if (!loggedIn && !authRoute) {
+        return loginLocationFor(state.uri.toString());
+      }
       if (loggedIn && authRoute) return adminOnly ? '/admin' : '/home';
       if (adminRoute && !adminOnly) {
         return '/home';
@@ -56,6 +58,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           builder: (_, s) => CheckoutScreen(
                 productId: s.uri.queryParameters['productId'],
                 quantity: int.tryParse(s.uri.queryParameters['quantity'] ?? ''),
+                selectedProductIds:
+                    (s.uri.queryParameters['cartProductIds'] ?? '')
+                        .split(',')
+                        .where((id) => id.isNotEmpty)
+                        .toList(),
               )),
       GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
       GoRoute(
@@ -79,11 +86,18 @@ String loginLocationFor(String requestedLocation) {
   return Uri(path: '/login', queryParameters: {'next': target}).toString();
 }
 
+String registerLocationFor(String? requestedLocation) {
+  final target = postLoginLocation(requestedLocation);
+  if (target == '/home') return '/register';
+  return Uri(path: '/register', queryParameters: {'next': target}).toString();
+}
+
 String postLoginLocation(String? requestedLocation) {
   if (requestedLocation == null || requestedLocation.isEmpty) return '/home';
   final uri = Uri.tryParse(requestedLocation);
   if (uri == null || uri.hasScheme || uri.hasAuthority) return '/home';
-  if (!requestedLocation.startsWith('/') || requestedLocation.startsWith('//')) {
+  if (!requestedLocation.startsWith('/') ||
+      requestedLocation.startsWith('//')) {
     return '/home';
   }
   if (requestedLocation == '/login' ||
