@@ -7,6 +7,8 @@ import '../../features/admin/screen/admin_dashboard_screen.dart';
 import '../../features/auth/screen/login_screen.dart';
 import '../../features/auth/screen/register_screen.dart';
 import '../../features/cart/screen/cart_screen.dart';
+import '../../features/chat/screen/chat_list_screen.dart';
+import '../../features/chat/screen/chat_room_screen.dart';
 import '../../features/checkout/screen/checkout_screen.dart';
 import '../../features/home/screen/home_screen.dart';
 import '../../features/product/screen/product_detail_screen.dart';
@@ -53,6 +55,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
       GoRoute(path: '/admin', builder: (_, __) => const AdminDashboardScreen()),
       GoRoute(path: '/cart', builder: (_, __) => const CartScreen()),
+      GoRoute(path: '/chats', builder: (_, __) => const ChatListScreen()),
+      GoRoute(
+          path: '/chats/:id',
+          builder: (_, s) => ChatRoomScreen(id: s.pathParameters['id']!)),
       GoRoute(
           path: '/checkout',
           builder: (_, s) => CheckoutScreen(

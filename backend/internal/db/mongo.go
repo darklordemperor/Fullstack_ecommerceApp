@@ -41,5 +41,25 @@ func (m *Mongo) ensureIndexes(ctx context.Context) error {
 	_, err = m.Database.Collection("products").Indexes().CreateOne(ctx, mongo.IndexModel{
 		Keys: bson.D{{Key: "seller_id", Value: 1}},
 	})
+	if err != nil {
+		return err
+	}
+	if _, err = m.Database.Collection("conversations").Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{Keys: bson.D{{Key: "buyer_id", Value: 1}, {Key: "updated_at", Value: -1}}},
+		{Keys: bson.D{{Key: "seller_id", Value: 1}, {Key: "updated_at", Value: -1}}},
+		{
+			Keys:    bson.D{{Key: "buyer_id", Value: 1}, {Key: "seller_id", Value: 1}, {Key: "product_id", Value: 1}},
+			Options: options.Index().SetUnique(true),
+		},
+	}); err != nil {
+		return err
+	}
+	_, err = m.Database.Collection("chat_messages").Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{Keys: bson.D{{Key: "conversation_id", Value: 1}, {Key: "created_at", Value: 1}}},
+		{
+			Keys:    bson.D{{Key: "expires_at", Value: 1}},
+			Options: options.Index().SetExpireAfterSeconds(0),
+		},
+	})
 	return err
 }

@@ -6,7 +6,9 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/settings/app_settings.dart';
 import '../../../core/widget/app_ui.dart';
+import '../../auth/provider/auth_provider.dart';
 import '../../cart/provider/cart_provider.dart';
+import '../../chat/provider/chat_provider.dart';
 import '../provider/product_provider.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
@@ -70,6 +72,21 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         onPressed: () => context.push(
                             '/checkout?productId=${widget.id}&quantity=$quantity'),
                         child: Text(tr(ref, 'Buy Now', 'ซื้อทันที')),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    SizedBox(
+                      width: 52,
+                      height: 48,
+                      child: OutlinedButton(
+                        onPressed: () => startChat(context),
+                        style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Icon(Icons.chat_bubble_outline_rounded),
                       ),
                     ),
                   ],
@@ -260,6 +277,28 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         },
       ),
     );
+  }
+
+  Future<void> startChat(BuildContext context) async {
+    final user = ref.read(authProvider).user;
+    if (user == null) {
+      context.go('/login?next=/products/${widget.id}');
+      return;
+    }
+    try {
+      final conversation =
+          await ref.read(chatRepositoryProvider).start(widget.id, user.id);
+      ref.invalidate(chatSummariesProvider);
+      if (context.mounted) {
+        context.push('/chats/${conversation.id}');
+      }
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(friendlyError(error))),
+        );
+      }
+    }
   }
 }
 

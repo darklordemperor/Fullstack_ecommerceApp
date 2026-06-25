@@ -6,6 +6,7 @@ import '../../../core/settings/app_settings.dart';
 import '../../../core/widget/app_ui.dart';
 import '../../auth/provider/auth_provider.dart';
 import '../../cart/provider/cart_provider.dart';
+import '../../chat/provider/chat_provider.dart';
 import '../../product/provider/product_provider.dart';
 import '../../product/widget/product_card.dart';
 import '../../../core/theme/app_theme.dart';
@@ -35,6 +36,7 @@ class HomeScreen extends ConsumerWidget {
             icon: const Icon(Icons.person_outline_rounded),
             onPressed: () => context.push('/profile'),
           ),
+          const _ChatAction(),
           Stack(
             clipBehavior: Clip.none,
             children: [
@@ -181,6 +183,42 @@ class HomeScreen extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ChatAction extends ConsumerWidget {
+  const _ChatAction();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unread = ref.watch(chatUnreadCountProvider);
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        IconButton(
+          tooltip: tr(ref, 'Chats', 'แชท'),
+          icon: const Icon(Icons.chat_bubble_outline_rounded),
+          onPressed: () => context.push('/chats'),
+        ),
+        if (unread > 0)
+          Positioned(
+            right: 6,
+            top: 6,
+            child: CircleAvatar(
+              radius: 10,
+              backgroundColor: AppTheme.primary,
+              child: Text(
+                unread > 99 ? '99+' : '$unread',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

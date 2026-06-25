@@ -27,6 +27,7 @@ func main() {
 	productRepo := repository.NewProductRepository(mongoDB.Database)
 	cartRepo := repository.NewCartRepository(mongoDB.Database)
 	orderRepo := repository.NewOrderRepository(mongoDB.Database)
+	chatRepo := repository.NewChatRepository(mongoDB.Database)
 
 	if err := seedDefaultTestUser(userRepo); err != nil {
 		log.Fatalf("failed to seed default test user: %v", err)
@@ -38,6 +39,7 @@ func main() {
 	cartHandler := handler.NewCartHandler(cartRepo, productRepo, userRepo, orderRepo)
 	sellerHandler := handler.NewSellerHandler(productRepo, orderRepo)
 	adminHandler := handler.NewAdminHandler(userRepo, productRepo, orderRepo)
+	chatHandler := handler.NewChatHandler(chatRepo, productRepo, userRepo)
 
 	router := gin.Default()
 	router.Use(cors.New(cors.Config{
@@ -79,6 +81,13 @@ func main() {
 	cart.DELETE("/clear", cartHandler.Clear)
 	cart.POST("/checkout", cartHandler.Checkout)
 	cart.POST("/buy-now", cartHandler.BuyNow)
+
+	chats := api.Group("/chats", middleware.Auth(cfg.JWTSecret))
+	chats.GET("", chatHandler.List)
+	chats.POST("/start", chatHandler.Start)
+	chats.GET("/:id/messages", chatHandler.Messages)
+	chats.POST("/:id/messages", chatHandler.Send)
+	chats.POST("/:id/read", chatHandler.Read)
 
 	seller := api.Group("/seller", middleware.Auth(cfg.JWTSecret), middleware.RequireRole("seller", userRepo))
 	seller.GET("/products", sellerHandler.Products)
