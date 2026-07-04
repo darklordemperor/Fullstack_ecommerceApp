@@ -204,7 +204,7 @@ void main() {
         'price': 99.0,
         'stock': 4,
         'category': 'Food',
-        'images': [],
+        'images': <String>[],
       });
 
       expect(product.mainImage, 'https://picsum.photos/seed/p2/600');

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/config/env_config.dart';
 import 'core/router/app_router.dart';
 import 'core/settings/app_settings.dart';
 import 'core/theme/app_theme.dart';
@@ -29,6 +30,15 @@ class ShopApp extends ConsumerWidget {
       themeMode: settings.themeMode,
       locale: Locale(settings.languageCode),
       routerConfig: router,
+      builder: (context, child) {
+        final label = EnvConfig.bannerLabel;
+        if (label == null || child == null) return child ?? const SizedBox();
+        return Banner(
+          message: label,
+          location: BannerLocation.topEnd,
+          child: child,
+        );
+      },
     );
   }
 }

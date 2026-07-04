@@ -200,7 +200,7 @@ class SellerDashboardScreen extends ConsumerWidget {
     );
     if (ok == true) {
       await ref.read(productRepositoryProvider).delete(id);
-      await refreshSeller(ref);
+      refreshSeller(ref);
     }
   }
 }

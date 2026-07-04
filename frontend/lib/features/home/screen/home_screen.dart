@@ -3,12 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/settings/app_settings.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widget/app_ui.dart';
 import '../../auth/provider/auth_provider.dart';
 import '../../cart/provider/cart_provider.dart';
 import '../../product/provider/product_provider.dart';
 import '../../product/widget/product_card.dart';
-import '../../../core/theme/app_theme.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});

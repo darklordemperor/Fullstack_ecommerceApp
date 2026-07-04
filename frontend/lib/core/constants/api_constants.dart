@@ -1,9 +1,10 @@
 import 'package:flutter/foundation.dart';
 
+import '../config/env_config.dart';
+
 class ApiConstants {
   static const connectTimeout = Duration(seconds: 4);
   static const transferTimeout = Duration(seconds: 20);
-  static const _configuredBaseUrl = String.fromEnvironment('API_BASE_URL');
   static const _devMachineBaseUrl = 'http://192.168.68.72:8080/api';
 
   static String get baseUrl {
@@ -11,8 +12,14 @@ class ApiConstants {
   }
 
   static List<String> get candidateBaseUrls {
-    if (_configuredBaseUrl.isNotEmpty) {
-      return [_withoutTrailingSlash(_configuredBaseUrl)];
+    if (EnvConfig.configuredBaseUrl.isNotEmpty) {
+      return [_withoutTrailingSlash(EnvConfig.configuredBaseUrl)];
+    }
+    // Staging/prod builds must never fall back to developer-machine hosts.
+    if (EnvConfig.current != AppEnvironment.dev) {
+      throw StateError(
+          'API_BASE_URL must be provided for ${EnvConfig.current.name} builds '
+          '(use --dart-define-from-file=env/${EnvConfig.current.name}.json).');
     }
     if (kIsWeb) return const ['http://localhost:8080/api'];
 

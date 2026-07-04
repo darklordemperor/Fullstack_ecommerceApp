@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../features/auth/provider/auth_provider.dart';
 import '../../features/admin/screen/admin_dashboard_screen.dart';
+import '../../features/auth/provider/auth_provider.dart';
 import '../../features/auth/screen/login_screen.dart';
 import '../../features/auth/screen/register_screen.dart';
 import '../../features/cart/screen/cart_screen.dart';
@@ -14,7 +14,8 @@ import '../../features/profile/screen/profile_screen.dart';
 import '../../features/profile/screen/seller_apply_screen.dart';
 import '../../features/seller/screen/seller_dashboard_screen.dart';
 import '../../features/seller/screen/seller_product_form_screen.dart';
-import '../dio/dio_client.dart';
+
+final rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(

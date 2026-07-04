@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -113,14 +114,28 @@ class _CartScreenState extends ConsumerState<CartScreen> {
   }
 
   Future<void> _updateQuantity(CartItemModel item, int quantity) async {
-    await ref.read(cartRepositoryProvider).update(item.productId, quantity);
-    ref.invalidate(cartProvider);
+    try {
+      await ref
+          .read(cartProvider.notifier)
+          .updateQuantity(item.productId, quantity);
+    } on DioException catch (error) {
+      _showActionError(error);
+    }
   }
 
   Future<void> _removeItem(CartItemModel item) async {
     selectedProductIds.remove(item.productId);
-    await ref.read(cartRepositoryProvider).remove(item.productId);
-    ref.invalidate(cartProvider);
+    try {
+      await ref.read(cartProvider.notifier).remove(item.productId);
+    } on DioException catch (error) {
+      _showActionError(error);
+    }
+  }
+
+  void _showActionError(Object error) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(friendlyError(error))));
   }
 }
 

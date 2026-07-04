@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:ecommerce_frontend/features/cart/model/cart_model.dart';
 import 'package:ecommerce_frontend/features/cart/provider/cart_provider.dart';
 import 'package:ecommerce_frontend/features/cart/repository/cart_repository.dart';
@@ -32,6 +33,8 @@ void main() {
 }
 
 class _CartRepository extends CartRepository {
+  _CartRepository() : super(Dio());
+
   @override
   Future<CartModel> get() async {
     return CartModel.fromJson({

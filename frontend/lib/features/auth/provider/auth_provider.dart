@@ -1,131 +1,169 @@
-import 'dart:convert';
+import 'dart:async';
+import 'dart:developer';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-import '../../../core/dio/dio_client.dart';
+import '../../../core/network/dio_provider.dart';
+import '../../../core/utils/jwt.dart';
 import '../model/user_model.dart';
 import '../repository/auth_repository.dart';
 
-final authRepositoryProvider = Provider((ref) => AuthRepository());
+final authRepositoryProvider =
+    Provider<AuthRepository>((ref) => AuthRepository(ref.watch(dioProvider)));
 
-class AuthState {
-  const AuthState(
-      {this.user,
-      this.loading = false,
-      this.bootstrapped = false,
-      this.message});
-  final UserModel? user;
-  final bool loading;
-  final bool bootstrapped;
-  final String? message;
+/// Session state modeled as a sealed hierarchy so impossible combinations
+/// (e.g. "loading and errored at the same time") cannot be represented.
+///
+/// The convenience getters keep widget code readable without exhaustive
+/// switches at every call site; pattern matching is available when a screen
+/// needs to handle every variant explicitly.
+sealed class AuthState {
+  const AuthState();
+
+  UserModel? get user => null;
   bool get isLoggedIn => user != null;
+
+  /// Whether the startup session restore has finished.
+  bool get bootstrapped => true;
+
+  /// Whether a login/register request is in flight.
+  bool get loading => false;
+
+  /// One-shot message to surface on the login screen (e.g. session expired).
+  String? get message => null;
 }
 
-class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier(this.repository) : super(const AuthState());
-  final AuthRepository repository;
+/// Startup: session restore from secure storage has not finished yet.
+class AuthInitial extends AuthState {
+  const AuthInitial();
 
-  Future<void> bootstrap() async {
-    final token = await DioClient.storage.read(key: 'token');
-    final storedMessage = await DioClient.storage.read(key: 'auth_message');
+  @override
+  bool get bootstrapped => false;
+}
+
+/// A login or register request is in flight.
+class Authenticating extends AuthState {
+  const Authenticating();
+
+  @override
+  bool get loading => true;
+}
+
+/// A user is signed in with a stored, unexpired token.
+class Authenticated extends AuthState {
+  const Authenticated(this.user);
+
+  @override
+  final UserModel user;
+}
+
+/// No valid session; [message] optionally explains why (expired, restore
+/// failure, explicit logout).
+class Unauthenticated extends AuthState {
+  const Unauthenticated({this.message});
+
+  @override
+  final String? message;
+}
+
+class AuthNotifier extends Notifier<AuthState> {
+  AuthRepository get _repository => ref.read(authRepositoryProvider);
+  FlutterSecureStorage get _storage => ref.read(secureStorageProvider);
+
+  @override
+  AuthState build() {
+    unawaited(_bootstrap());
+    return const AuthInitial();
+  }
+
+  /// Restores the session from secure storage on startup. Only applies its
+  /// result while the state is still [AuthInitial] so an explicit login that
+  /// finishes first is never overwritten.
+  Future<void> _bootstrap() async {
+    final token = await _storage.read(key: StorageKeys.token);
+    final storedMessage = await _storage.read(key: StorageKeys.authMessage);
     if (storedMessage != null) {
-      await DioClient.storage.delete(key: 'auth_message');
+      await _storage.delete(key: StorageKeys.authMessage);
     }
     if (token == null) {
-      state = AuthState(bootstrapped: true, message: storedMessage);
+      _finishBootstrap(Unauthenticated(message: storedMessage));
       return;
     }
-    if (isTokenExpired(token)) {
-      await DioClient.storage.delete(key: 'token');
-      state = const AuthState(
-          bootstrapped: true,
-          message: 'Your session expired. Please sign in again.');
+    if (isJwtExpired(token)) {
+      await _storage.delete(key: StorageKeys.token);
+      _finishBootstrap(const Unauthenticated(
+          message: 'Your session expired. Please sign in again.'));
       return;
     }
     try {
-      final user = await repository.me();
-      state = AuthState(user: user, bootstrapped: true);
-    } catch (error) {
-      debugPrint('Auth bootstrap failed: $error');
-      await DioClient.storage.delete(key: 'token');
-      state = const AuthState(
-          bootstrapped: true,
-          message: 'We could not restore your session. Please sign in again.');
+      final user = await _repository.me();
+      _finishBootstrap(Authenticated(user));
+    } on Exception catch (error) {
+      log('Auth bootstrap failed', name: 'auth', error: error);
+      await _storage.delete(key: StorageKeys.token);
+      _finishBootstrap(const Unauthenticated(
+          message: 'We could not restore your session. Please sign in again.'));
     }
+  }
+
+  void _finishBootstrap(AuthState result) {
+    if (state is AuthInitial) state = result;
   }
 
   Future<void> login(String email, String password) async {
     final previous = state;
-    state = AuthState(
-        user: previous.user,
-        loading: true,
-        bootstrapped: previous.bootstrapped);
+    state = const Authenticating();
     try {
-      final result = await repository.login(email, password);
-      await DioClient.storage.write(key: 'token', value: result.token);
-      state = AuthState(user: result.user, bootstrapped: true);
+      final result = await _repository.login(email, password);
+      await _storage.write(key: StorageKeys.token, value: result.token);
+      state = Authenticated(result.user);
     } catch (_) {
-      state =
-          AuthState(user: previous.user, bootstrapped: previous.bootstrapped);
+      state = previous;
       rethrow;
     }
   }
 
   Future<void> register(Map<String, dynamic> body) async {
     final previous = state;
-    state = AuthState(
-        user: previous.user,
-        loading: true,
-        bootstrapped: previous.bootstrapped);
+    state = const Authenticating();
     try {
-      await repository.register(body);
-      final result = await repository.login(
+      await _repository.register(body);
+      final result = await _repository.login(
         body['email'].toString().trim(),
         body['password'].toString(),
       );
-      await DioClient.storage.write(key: 'token', value: result.token);
-      state = AuthState(user: result.user, bootstrapped: true);
+      await _storage.write(key: StorageKeys.token, value: result.token);
+      state = Authenticated(result.user);
     } catch (_) {
-      state =
-          AuthState(user: previous.user, bootstrapped: previous.bootstrapped);
+      state = previous;
       rethrow;
     }
   }
 
   Future<void> refreshMe() async {
-    state = AuthState(user: await repository.me(), bootstrapped: true);
+    state = Authenticated(await _repository.me());
+  }
+
+  Future<void> updateProfile(Map<String, dynamic> body) async {
+    state = Authenticated(await _repository.updateProfile(body));
   }
 
   Future<void> logout({String? message}) async {
-    await DioClient.storage.delete(key: 'token');
-    state = AuthState(bootstrapped: true, message: message);
+    await _storage.delete(key: StorageKeys.token);
+    state = Unauthenticated(message: message);
   }
 
-  List<String> rolesFromToken(String token) {
-    final parts = token.split('.');
-    if (parts.length != 3) return const [];
-    final payload =
-        utf8.decode(base64Url.decode(base64Url.normalize(parts[1])));
-    return List<String>.from(jsonDecode(payload)['role'] ?? const []);
-  }
-
-  bool isTokenExpired(String token) {
-    try {
-      final parts = token.split('.');
-      if (parts.length != 3) return true;
-      final payload =
-          utf8.decode(base64Url.decode(base64Url.normalize(parts[1])));
-      final exp = jsonDecode(payload)['exp'];
-      if (exp is! num) return true;
-      return DateTime.now().millisecondsSinceEpoch >= exp.toInt() * 1000;
-    } catch (error) {
-      debugPrint('Token decode failed: $error');
-      return true;
-    }
+  /// Called by the network layer when any request receives a 401. Drops the
+  /// session so the router redirects to login. Ignored while a login attempt
+  /// is in flight — a wrong password is not an expired session.
+  void handleUnauthorized() {
+    if (state is! Authenticated) return;
+    unawaited(_storage.delete(key: StorageKeys.token));
+    state = const Unauthenticated(
+        message: 'Your session expired. Please sign in again.');
   }
 }
 
-final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return AuthNotifier(ref.watch(authRepositoryProvider))..bootstrap();
-});
+final authProvider =
+    NotifierProvider<AuthNotifier, AuthState>(AuthNotifier.new);

@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../../core/theme/app_theme.dart';
 import '../../../core/settings/app_settings.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widget/app_ui.dart';
 import '../../cart/provider/cart_provider.dart';
 import '../provider/product_provider.dart';
@@ -52,9 +52,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       child: OutlinedButton(
                         onPressed: () async {
                           await ref
-                              .read(cartRepositoryProvider)
+                              .read(cartProvider.notifier)
                               .add(widget.id, quantity);
-                          ref.invalidate(cartProvider);
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                                 content: Text(tr(ref, 'Added to cart',

@@ -171,7 +171,7 @@ class _SellerProductFormScreenState
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
-                        value: category,
+                        initialValue: category,
                         items: categories
                             .map((c) => DropdownMenuItem(
                                 value: c, child: Text(categoryLabel(ref, c))))
@@ -297,7 +297,7 @@ class _SellerProductFormScreenState
       } else {
         await repo.update(widget.productId!, body);
       }
-      await refreshSeller(ref, productId: widget.productId);
+      refreshSeller(ref, productId: widget.productId);
       if (mounted) goBack(context, fallback: '/seller');
     } on DioException catch (error) {
       if (mounted) {
@@ -324,7 +324,7 @@ class _PriceInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
       TextEditingValue oldValue, TextEditingValue newValue) {
-    var text = newValue.text.replaceAll(_notPriceChars, '');
+    final text = newValue.text.replaceAll(_notPriceChars, '');
     if (text.isEmpty) {
       return newValue.copyWith(text: '');
     }

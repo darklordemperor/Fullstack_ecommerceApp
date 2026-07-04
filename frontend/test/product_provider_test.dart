@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:ecommerce_frontend/features/product/model/product_model.dart';
 import 'package:ecommerce_frontend/features/product/provider/product_provider.dart';
 import 'package:ecommerce_frontend/features/product/repository/product_repository.dart';
@@ -52,7 +53,7 @@ void main() {
 }
 
 class _FakeProductRepository extends ProductRepository {
-  _FakeProductRepository(this.product);
+  _FakeProductRepository(this.product) : super(Dio());
 
   ProductModel product;
   int detailCalls = 0;

@@ -116,7 +116,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              value: gender,
+              initialValue: gender,
               decoration: InputDecoration(labelText: tr(ref, 'Gender', 'เพศ')),
               items: const ['Female', 'Male', 'Other']
                   .map((value) => DropdownMenuItem(
@@ -206,7 +206,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               'กรุณากรอกชื่อ อายุ เพศ และที่อยู่ให้ครบถ้วน'))));
       return;
     }
-    await ref.read(authRepositoryProvider).updateProfile({
+    await ref.read(authProvider.notifier).updateProfile({
       'name': name.text.trim(),
       'lastname': lastname.text.trim(),
       'age': parsedAge,
@@ -214,7 +214,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       'address': address.text.trim(),
       'profile_image': profileImage,
     });
-    await ref.read(authProvider.notifier).refreshMe();
     if (mounted) setState(() => editing = false);
   }
 }

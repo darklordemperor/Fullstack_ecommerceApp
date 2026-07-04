@@ -38,13 +38,13 @@ class CartItemModel {
       );
 
   factory CartItemModel.fromJson(Map<String, dynamic> json) => CartItemModel(
-        productId: json['product_id'] ?? '',
-        sellerId: json['seller_id'] ?? '',
-        sellerName: json['seller_name'] ?? 'Shop',
-        name: json['name'] ?? '',
-        price: (json['price'] ?? 0).toDouble(),
-        image: json['image'] ?? '',
-        quantity: json['quantity'] ?? 0,
+        productId: json['product_id'] as String? ?? '',
+        sellerId: json['seller_id'] as String? ?? '',
+        sellerName: json['seller_name'] as String? ?? 'Shop',
+        name: json['name'] as String? ?? '',
+        price: (json['price'] as num? ?? 0).toDouble(),
+        image: json['image'] as String? ?? '',
+        quantity: (json['quantity'] as num? ?? 0).toInt(),
       );
 }
 
@@ -82,9 +82,11 @@ class CartModel {
 
   factory CartModel.empty() => const CartModel(id: '', items: []);
   factory CartModel.fromJson(Map<String, dynamic> json) => CartModel(
-        id: json['id'] ?? '',
-        items: _mergeDuplicateItems((json['items'] as List? ?? const [])
-            .map((e) => CartItemModel.fromJson(Map<String, dynamic>.from(e)))
+        id: json['id'] as String? ?? '',
+        items: _mergeDuplicateItems((json['items'] as List<dynamic>? ??
+                const [])
+            .map((e) =>
+                CartItemModel.fromJson(Map<String, dynamic>.from(e as Map)))
             .toList()),
       );
 }

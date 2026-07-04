@@ -40,19 +40,21 @@ class UserModel {
   bool get isAdmin => role.contains('admin');
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
-        id: json['id'] ?? '',
-        name: json['name'] ?? '',
-        lastname: json['lastname'] ?? '',
-        age: json['age'] ?? 0,
-        gender: json['gender'] ?? '',
-        email: json['email'] ?? '',
-        role: List<String>.from(json['role'] ?? const ['customer']),
-        banned: json['banned'] ?? false,
-        address: json['address'],
-        profileImage: json['profile_image'],
-        shopName: json['shop_name'],
-        shopLocation: json['shop_location'],
-        taxPayerNumber: json['tax_payer_number'],
-        sellerStatus: json['seller_status'],
+        id: json['id'] as String? ?? '',
+        name: json['name'] as String? ?? '',
+        lastname: json['lastname'] as String? ?? '',
+        age: (json['age'] as num? ?? 0).toInt(),
+        gender: json['gender'] as String? ?? '',
+        email: json['email'] as String? ?? '',
+        role: (json['role'] as List<dynamic>? ?? const ['customer'])
+            .map((role) => role.toString())
+            .toList(),
+        banned: json['banned'] as bool? ?? false,
+        address: json['address'] as String?,
+        profileImage: json['profile_image'] as String?,
+        shopName: json['shop_name'] as String?,
+        shopLocation: json['shop_location'] as String?,
+        taxPayerNumber: json['tax_payer_number'] as String?,
+        sellerStatus: json['seller_status'] as String?,
       );
 }

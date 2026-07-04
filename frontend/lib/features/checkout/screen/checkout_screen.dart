@@ -136,12 +136,11 @@ class CheckoutScreen extends ConsumerWidget {
       return;
     }
     if (isBuyNow) {
-      await ref.read(cartRepositoryProvider).buyNow(productId!, quantity ?? 1);
+      await ref.read(cartProvider.notifier).buyNow(productId!, quantity ?? 1);
     } else {
-      await ref.read(cartRepositoryProvider).checkout(selectedProductIds);
-      ref.invalidate(cartProvider);
+      await ref.read(cartProvider.notifier).checkout(selectedProductIds);
     }
-    await refreshSeller(ref);
+    refreshSeller(ref);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content:

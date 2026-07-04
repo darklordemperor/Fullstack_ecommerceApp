@@ -25,15 +25,15 @@ class ProductModel {
       images.isEmpty ? 'https://picsum.photos/seed/$id/600' : images.first;
 
   factory ProductModel.fromJson(Map<String, dynamic> json) => ProductModel(
-        id: json['id'] ?? '',
-        sellerId: json['seller_id'] ?? '',
-        sellerName: json['seller_name'] ?? '',
-        name: json['name'] ?? '',
-        description: json['description'] ?? '',
+        id: json['id'] as String? ?? '',
+        sellerId: json['seller_id'] as String? ?? '',
+        sellerName: json['seller_name'] as String? ?? '',
+        name: json['name'] as String? ?? '',
+        description: json['description'] as String? ?? '',
         price: (json['price'] as num? ?? 0).toDouble(),
         stock: (json['stock'] as num? ?? 0).toInt(),
-        category: json['category'] ?? '',
-        images: (json['images'] as List? ?? const [])
+        category: json['category'] as String? ?? '',
+        images: (json['images'] as List<dynamic>? ?? const [])
             .map((image) => image.toString())
             .where((image) => image.isNotEmpty)
             .toList(),

@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/network/dio_provider.dart';
 import '../model/product_model.dart';
 import '../repository/product_repository.dart';
 
-final productRepositoryProvider = Provider((ref) => ProductRepository());
+final productRepositoryProvider = Provider<ProductRepository>(
+    (ref) => ProductRepository(ref.watch(dioProvider)));
 final categoryProvider = StateProvider<String>((ref) => 'All');
 final searchProvider = StateProvider<String>((ref) => '');
 

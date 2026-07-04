@@ -1,35 +1,41 @@
-import '../../../core/dio/dio_client.dart';
+import 'package:dio/dio.dart';
+
+import '../../../core/network/dio_provider.dart';
 import '../../auth/model/user_model.dart';
 import '../../product/model/product_model.dart';
 
 class AdminRepository {
+  AdminRepository(this._dio);
+
+  final Dio _dio;
+
   Future<Map<String, dynamic>> stats() async {
-    final response = await DioClient.dio.get('/admin/stats');
-    return Map<String, dynamic>.from(DioClient.payload(response));
+    final response = await _dio.get<dynamic>('/admin/stats');
+    return apiPayload<Map<String, dynamic>>(response);
   }
 
   Future<List<UserModel>> users() async {
-    final response = await DioClient.dio.get('/admin/users');
-    final data = DioClient.payload(response) as List? ?? const [];
+    final response = await _dio.get<dynamic>('/admin/users');
+    final data = apiPayload<List<dynamic>?>(response) ?? const <dynamic>[];
     return data
-        .map((e) => UserModel.fromJson(Map<String, dynamic>.from(e)))
+        .map((e) => UserModel.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
   }
 
   Future<List<ProductModel>> products() async {
-    final response = await DioClient.dio.get('/admin/products');
-    final data = DioClient.payload(response) as List? ?? const [];
+    final response = await _dio.get<dynamic>('/admin/products');
+    final data = apiPayload<List<dynamic>?>(response) ?? const <dynamic>[];
     return data
-        .map((e) => ProductModel.fromJson(Map<String, dynamic>.from(e)))
+        .map((e) => ProductModel.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
   }
 
   Future<void> setBanned(String userId, bool banned) async {
-    await DioClient.dio
-        .put('/admin/users/$userId/ban', data: {'banned': banned});
+    await _dio.put<dynamic>('/admin/users/$userId/ban',
+        data: {'banned': banned});
   }
 
   Future<void> deleteProduct(String productId) async {
-    await DioClient.dio.delete('/admin/products/$productId');
+    await _dio.delete<dynamic>('/admin/products/$productId');
   }
 }

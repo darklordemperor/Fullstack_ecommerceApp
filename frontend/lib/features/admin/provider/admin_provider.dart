@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/network/dio_provider.dart';
 import '../../auth/model/user_model.dart';
 import '../../product/model/product_model.dart';
 import '../repository/admin_repository.dart';
 
-final adminRepositoryProvider = Provider((ref) => AdminRepository());
+final adminRepositoryProvider =
+    Provider<AdminRepository>((ref) => AdminRepository(ref.watch(dioProvider)));
 
 final adminStatsProvider = FutureProvider<Map<String, dynamic>>((ref) {
   return ref.watch(adminRepositoryProvider).stats();

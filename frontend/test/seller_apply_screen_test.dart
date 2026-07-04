@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:ecommerce_frontend/features/auth/model/user_model.dart';
 import 'package:ecommerce_frontend/features/auth/provider/auth_provider.dart';
 import 'package:ecommerce_frontend/features/auth/repository/auth_repository.dart';
@@ -51,6 +52,8 @@ void main() {
 }
 
 class _SellerApplyRepository extends AuthRepository {
+  _SellerApplyRepository() : super(Dio());
+
   @override
   Future<void> applySeller(
     String shopName,

@@ -219,7 +219,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: DropdownButtonFormField<String>(
-                                value: gender,
+                                initialValue: gender,
                                 decoration: InputDecoration(
                                   labelText: tr(ref, 'Gender', 'เพศ'),
                                   prefixIcon: const Icon(Icons.wc_outlined),
