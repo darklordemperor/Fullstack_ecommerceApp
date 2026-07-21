@@ -1,0 +1,27 @@
+# golangci-lint configuration.
+#
+# In CI this runs as an ADVISORY job (continue-on-error) so the pipeline stays
+# green while the team confirms the ruleset on their runner. Flip the lint job
+# in .github/workflows/backend.yml to blocking once it is verified.
+run:
+  timeout: 5m
+
+linters:
+  enable:
+    - errcheck      # unchecked errors
+    - govet         # suspicious constructs (also a blocking CI step)
+    - ineffassign   # assignments never used
+    - staticcheck   # broad correctness/simplification set
+    - unused        # dead code
+    - misspell      # comment/string typos
+    - unconvert     # redundant type conversions
+
+issues:
+  exclude-rules:
+    # Deferred Close on a DB cursor: nothing actionable can be done with the
+    # error at that point, and the read already succeeded.
+    - source: 'defer .*\.Close\('
+      linters: [errcheck]
+    # Tests may ignore returns for brevity.
+    - path: _test\.go
+      linters: [errcheck]

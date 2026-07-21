@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/responsive.dart';
 import '../../../core/settings/app_settings.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../core/widget/app_ui.dart';
 import '../model/cart_model.dart';
 import '../provider/cart_provider.dart';
@@ -64,51 +64,55 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                       context.push(uri.toString());
                     },
             ),
-      body: cart.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => AppErrorState(
-            message: friendlyError(e),
-            onRetry: () => ref.invalidate(cartProvider)),
-        data: (value) {
-          if (value.items.isEmpty) {
-            return AppEmptyState(
-              icon: Icons.shopping_cart_outlined,
-              title: tr(ref, 'Your cart is empty', 'ตะกร้าของคุณว่าง'),
-              message: tr(
-                  ref,
-                  'Add products from the home screen when you are ready.',
-                  'เลือกสินค้าเพิ่มจากหน้าแรกเมื่อพร้อม'),
-            );
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
-            itemCount: value.shopGroups.length,
-            itemBuilder: (_, i) {
-              final group = value.shopGroups[i];
-              return _CartShopSection(
-                group: group,
-                selectedProductIds: selectedIds,
-                onShopSelected: (checked) => setState(() {
-                  if (checked) {
-                    selectedProductIds.addAll(group.productIds);
-                  } else {
-                    selectedProductIds.removeAll(group.productIds);
-                  }
-                }),
-                onItemSelected: (item, checked) => setState(() {
-                  if (checked) {
-                    selectedProductIds.add(item.productId);
-                  } else {
-                    selectedProductIds.remove(item.productId);
-                  }
-                }),
-                onDecrease: (item) => _updateQuantity(item, item.quantity - 1),
-                onIncrease: (item) => _updateQuantity(item, item.quantity + 1),
-                onRemove: (item) => _removeItem(item),
+      body: ResponsiveCenter(
+        child: cart.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => AppErrorState(
+              message: friendlyError(e),
+              onRetry: () => ref.invalidate(cartProvider)),
+          data: (value) {
+            if (value.items.isEmpty) {
+              return AppEmptyState(
+                icon: Icons.shopping_cart_outlined,
+                title: tr(ref, 'Your cart is empty', 'ตะกร้าของคุณว่าง'),
+                message: tr(
+                    ref,
+                    'Add products from the home screen when you are ready.',
+                    'เลือกสินค้าเพิ่มจากหน้าแรกเมื่อพร้อม'),
               );
-            },
-          );
-        },
+            }
+            return ListView.builder(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
+              itemCount: value.shopGroups.length,
+              itemBuilder: (_, i) {
+                final group = value.shopGroups[i];
+                return _CartShopSection(
+                  group: group,
+                  selectedProductIds: selectedIds,
+                  onShopSelected: (checked) => setState(() {
+                    if (checked) {
+                      selectedProductIds.addAll(group.productIds);
+                    } else {
+                      selectedProductIds.removeAll(group.productIds);
+                    }
+                  }),
+                  onItemSelected: (item, checked) => setState(() {
+                    if (checked) {
+                      selectedProductIds.add(item.productId);
+                    } else {
+                      selectedProductIds.remove(item.productId);
+                    }
+                  }),
+                  onDecrease: (item) =>
+                      _updateQuantity(item, item.quantity - 1),
+                  onIncrease: (item) =>
+                      _updateQuantity(item, item.quantity + 1),
+                  onRemove: (item) => _removeItem(item),
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
@@ -182,13 +186,13 @@ class _CartShopSection extends ConsumerWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryDark,
+                    color: Theme.of(context).colorScheme.primary,
                     borderRadius: BorderRadius.circular(3),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Mall',
                     style: TextStyle(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onPrimary,
                         fontSize: 12,
                         fontWeight: FontWeight.w900),
                   ),
@@ -278,8 +282,8 @@ class _CartItemCard extends ConsumerWidget {
                 const SizedBox(height: 8),
                 Text(
                   money.format(item.price),
-                  style: const TextStyle(
-                      color: AppTheme.primaryDark,
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.w900,
                       fontSize: 17),
                 ),
@@ -364,7 +368,9 @@ class _CartFooter extends ConsumerWidget {
         padding: const EdgeInsets.fromLTRB(10, 10, 14, 14),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
-          border: const Border(top: BorderSide(color: AppTheme.line)),
+          border: Border(
+              top: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant)),
           boxShadow: const [
             BoxShadow(color: Color(0x12000000), blurRadius: 12)
           ],
@@ -391,8 +397,8 @@ class _CartFooter extends ConsumerWidget {
                         fontWeight: FontWeight.w700)),
                 Text(
                   money.format(selectedTotal),
-                  style: const TextStyle(
-                      color: AppTheme.primaryDark,
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
                       fontSize: 18,
                       fontWeight: FontWeight.w900),
                 ),

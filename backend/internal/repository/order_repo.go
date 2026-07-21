@@ -4,10 +4,19 @@ import (
 	"context"
 	"time"
 
+	"ecommerce/backend/internal/domain"
 	"ecommerce/backend/internal/model"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
+
+// Compile-time proof the MongoDB implementation satisfies the domain port.
+var _ domain.OrderRepository = (*OrderRepository)(nil)
+
+// newestFirst sorts orders by creation time descending, matching the
+// {seller_id/customer_id, created_at:-1} indexes so the sort is index-backed.
+var newestFirst = options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}})
 
 type OrderRepository struct {
 	collection *mongo.Collection
@@ -38,7 +47,7 @@ func (r *OrderRepository) CreateMany(ctx context.Context, orders []model.Order) 
 }
 
 func (r *OrderRepository) FindBySeller(ctx context.Context, sellerID bson.ObjectID) ([]model.Order, error) {
-	cursor, err := r.collection.Find(ctx, bson.M{"seller_id": sellerID})
+	cursor, err := r.collection.Find(ctx, bson.M{"seller_id": sellerID}, newestFirst)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +60,7 @@ func (r *OrderRepository) FindBySeller(ctx context.Context, sellerID bson.Object
 }
 
 func (r *OrderRepository) FindAll(ctx context.Context) ([]model.Order, error) {
-	cursor, err := r.collection.Find(ctx, bson.M{})
+	cursor, err := r.collection.Find(ctx, bson.M{}, newestFirst)
 	if err != nil {
 		return nil, err
 	}

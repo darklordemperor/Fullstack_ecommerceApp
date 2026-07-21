@@ -8,6 +8,7 @@ import '../constants/api_constants.dart';
 /// Keys for values persisted in platform secure storage.
 abstract final class StorageKeys {
   static const token = 'token';
+  static const refreshToken = 'refresh_token';
   static const authMessage = 'auth_message';
 }
 
@@ -33,6 +34,7 @@ final dioProvider = Provider<Dio>((ref) {
   ));
   dio.interceptors.add(AuthTokenInterceptor(
     storage: ref.watch(secureStorageProvider),
+    dio: dio,
     // Read lazily inside the callback: the auth notifier depends on this
     // provider, so reading it while building would create a dependency cycle.
     onUnauthorized: () => ref.read(authProvider.notifier).handleUnauthorized(),
@@ -43,16 +45,28 @@ final dioProvider = Provider<Dio>((ref) {
   return dio;
 });
 
-/// Attaches the bearer token to every request and reports 401 responses to
-/// the auth layer.
+/// Attaches the bearer access token to every request and, on a 401, transparently
+/// refreshes the session and retries once.
 ///
-/// Navigation intentionally stays out of this class: the router listens to
-/// auth state and redirects to login when the session becomes invalid.
+/// The refresh call goes through a bare Dio (no interceptors) so it neither
+/// attaches the stale token nor recurses into this handler. Concurrent 401s
+/// share a single in-flight refresh. If refresh is impossible or fails, the auth
+/// layer is notified so the router redirects to login — navigation stays out of
+/// here on purpose.
 class AuthTokenInterceptor extends Interceptor {
-  AuthTokenInterceptor({required this.storage, required this.onUnauthorized});
+  AuthTokenInterceptor({
+    required this.storage,
+    required this.onUnauthorized,
+    required Dio dio,
+  }) : _dio = dio;
 
   final FlutterSecureStorage storage;
   final void Function() onUnauthorized;
+  final Dio _dio;
+
+  static const _retriedFlag = 'authRetried';
+
+  Future<bool>? _refreshing;
 
   @override
   Future<void> onRequest(
@@ -67,11 +81,62 @@ class AuthTokenInterceptor extends Interceptor {
   }
 
   @override
-  void onError(DioException err, ErrorInterceptorHandler handler) {
-    if (err.response?.statusCode == 401) {
-      onUnauthorized();
+  Future<void> onError(
+    DioException err,
+    ErrorInterceptorHandler handler,
+  ) async {
+    final isUnauthorized = err.response?.statusCode == 401;
+    final isAuthCall = err.requestOptions.path.contains('/auth/');
+    final alreadyRetried = err.requestOptions.extra[_retriedFlag] == true;
+    if (!isUnauthorized || isAuthCall || alreadyRetried) {
+      handler.next(err);
+      return;
     }
-    handler.next(err);
+
+    if (!await _refreshOnce()) {
+      onUnauthorized();
+      handler.next(err);
+      return;
+    }
+
+    try {
+      final token = await storage.read(key: StorageKeys.token);
+      final options = err.requestOptions
+        ..headers['Authorization'] = 'Bearer $token'
+        ..extra[_retriedFlag] = true;
+      handler.resolve(await _dio.fetch<dynamic>(options));
+    } on DioException catch (retryError) {
+      handler.next(retryError);
+    }
+  }
+
+  /// Refreshes the token pair, collapsing concurrent callers onto one request.
+  Future<bool> _refreshOnce() {
+    return _refreshing ??=
+        _performRefresh().whenComplete(() => _refreshing = null);
+  }
+
+  Future<bool> _performRefresh() async {
+    final refreshToken = await storage.read(key: StorageKeys.refreshToken);
+    if (refreshToken == null || refreshToken.isEmpty) return false;
+    try {
+      final client = Dio(BaseOptions(
+        baseUrl: _dio.options.baseUrl,
+        connectTimeout: _dio.options.connectTimeout,
+        receiveTimeout: _dio.options.receiveTimeout,
+      ));
+      final response = await client.post<dynamic>(
+        '/auth/refresh',
+        data: {'refresh_token': refreshToken},
+      );
+      final data = apiPayload<Map<String, dynamic>>(response);
+      await storage.write(key: StorageKeys.token, value: data['token'] as String);
+      await storage.write(
+          key: StorageKeys.refreshToken, value: data['refresh_token'] as String);
+      return true;
+    } on DioException {
+      return false;
+    }
   }
 }
 

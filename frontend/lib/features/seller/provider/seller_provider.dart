@@ -3,10 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/dio_provider.dart';
 import '../../product/model/product_model.dart';
 import '../../product/provider/product_provider.dart';
-import '../repository/seller_repository.dart';
+import '../data/repositories/seller_repository_impl.dart';
+import '../domain/repositories/seller_repository.dart';
 
 final sellerRepositoryProvider = Provider<SellerRepository>(
-    (ref) => SellerRepository(ref.watch(dioProvider)));
+    (ref) => SellerRepositoryImpl(ref.watch(dioProvider)));
 
 final sellerStatsProvider = FutureProvider<Map<String, dynamic>>(
     (ref) => ref.watch(sellerRepositoryProvider).stats());

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/responsive.dart';
 import '../../../core/settings/app_settings.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../core/widget/app_ui.dart';
 import '../../auth/provider/auth_provider.dart';
 import '../../cart/model/cart_model.dart';
@@ -50,77 +50,81 @@ class CheckoutScreen extends ConsumerWidget {
             : cartTotal,
         onPlaceOrder: () => _placeOrder(context, ref),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(12),
-        children: [
-          _Section(
-            child: ListTile(
-              leading: const Icon(Icons.location_on, color: AppTheme.primary),
-              title: Text(user?.fullName ?? tr(ref, 'Customer', 'ลูกค้า')),
-              subtitle: Text(user?.address?.isNotEmpty == true
-                  ? user!.address!
-                  : tr(ref, 'Add your delivery address in Profile.',
-                      'เพิ่มที่อยู่จัดส่งในหน้าโปรไฟล์')),
-              trailing: const Icon(Icons.chevron_right),
+      body: ResponsiveCenter(
+        child: ListView(
+          padding: const EdgeInsets.all(12),
+          children: [
+            _Section(
+              child: ListTile(
+                leading: Icon(Icons.location_on,
+                    color: Theme.of(context).colorScheme.primary),
+                title: Text(user?.fullName ?? tr(ref, 'Customer', 'ลูกค้า')),
+                subtitle: Text(user?.address?.isNotEmpty == true
+                    ? user!.address!
+                    : tr(ref, 'Add your delivery address in Profile.',
+                        'เพิ่มที่อยู่จัดส่งในหน้าโปรไฟล์')),
+                trailing: const Icon(Icons.chevron_right),
+              ),
             ),
-          ),
-          const SizedBox(height: 10),
-          if (isBuyNow)
-            directProduct!.when(
-              loading: () => const Center(
-                  child: Padding(
-                      padding: EdgeInsets.all(24),
-                      child: CircularProgressIndicator())),
-              error: (e, _) => AppErrorState(
-                  message: friendlyError(e),
-                  onRetry: () =>
-                      ref.invalidate(productDetailProvider(productId!))),
-              data: (product) => _ProductSection(
-                  items: [_CheckoutItem.fromProduct(product, quantity ?? 1)]),
-            )
-          else
-            cart.when(
-              loading: () => const Center(
-                  child: Padding(
-                      padding: EdgeInsets.all(24),
-                      child: CircularProgressIndicator())),
-              error: (e, _) => AppErrorState(
-                  message: friendlyError(e),
-                  onRetry: () => ref.invalidate(cartProvider)),
-              data: (value) => _ProductSection(
-                  items: (selectedIds.isEmpty
-                          ? value.items
-                          : value.selectedItems(selectedIds))
-                      .map(_CheckoutItem.fromCart)
-                      .toList()),
+            const SizedBox(height: 10),
+            if (isBuyNow)
+              directProduct!.when(
+                loading: () => const Center(
+                    child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: CircularProgressIndicator())),
+                error: (e, _) => AppErrorState(
+                    message: friendlyError(e),
+                    onRetry: () =>
+                        ref.invalidate(productDetailProvider(productId!))),
+                data: (product) => _ProductSection(
+                    items: [_CheckoutItem.fromProduct(product, quantity ?? 1)]),
+              )
+            else
+              cart.when(
+                loading: () => const Center(
+                    child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: CircularProgressIndicator())),
+                error: (e, _) => AppErrorState(
+                    message: friendlyError(e),
+                    onRetry: () => ref.invalidate(cartProvider)),
+                data: (value) => _ProductSection(
+                    items: (selectedIds.isEmpty
+                            ? value.items
+                            : value.selectedItems(selectedIds))
+                        .map(_CheckoutItem.fromCart)
+                        .toList()),
+              ),
+            const SizedBox(height: 10),
+            _Section(
+              child: Column(
+                children: [
+                  ListTile(
+                      leading: const Icon(Icons.local_shipping_outlined),
+                      title:
+                          Text(tr(ref, 'Standard Delivery', 'จัดส่งมาตรฐาน')),
+                      subtitle: Text(
+                          tr(ref, 'Domestic shipping', 'จัดส่งภายในประเทศ')),
+                      trailing: Text(tr(ref, 'Free', 'ฟรี'))),
+                  const Divider(height: 1),
+                  ListTile(
+                      leading: const Icon(Icons.payments_outlined),
+                      title: Text(tr(ref, 'Payment', 'การชำระเงิน')),
+                      subtitle: Text(tr(ref, 'Cashless demo payment',
+                          'การชำระเงินตัวอย่างแบบไม่ใช้เงินสด')),
+                      trailing: Icon(Icons.check_circle,
+                          color: Theme.of(context).colorScheme.primary)),
+                ],
+              ),
             ),
-          const SizedBox(height: 10),
-          _Section(
-            child: Column(
-              children: [
-                ListTile(
-                    leading: const Icon(Icons.local_shipping_outlined),
-                    title: Text(tr(ref, 'Standard Delivery', 'จัดส่งมาตรฐาน')),
-                    subtitle:
-                        Text(tr(ref, 'Domestic shipping', 'จัดส่งภายในประเทศ')),
-                    trailing: Text(tr(ref, 'Free', 'ฟรี'))),
-                const Divider(height: 1),
-                ListTile(
-                    leading: const Icon(Icons.payments_outlined),
-                    title: Text(tr(ref, 'Payment', 'การชำระเงิน')),
-                    subtitle: Text(tr(ref, 'Cashless demo payment',
-                        'การชำระเงินตัวอย่างแบบไม่ใช้เงินสด')),
-                    trailing: const Icon(Icons.check_circle,
-                        color: AppTheme.primary)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-          _Summary(
-              total: isBuyNow
-                  ? (directProduct?.valueOrNull?.price ?? 0) * (quantity ?? 1)
-                  : cartTotal),
-        ],
+            const SizedBox(height: 10),
+            _Summary(
+                total: isBuyNow
+                    ? (directProduct?.valueOrNull?.price ?? 0) * (quantity ?? 1)
+                    : cartTotal),
+          ],
+        ),
       ),
     );
   }
@@ -252,8 +256,9 @@ class _Summary extends ConsumerWidget {
           ListTile(
               title: Text(tr(ref, 'Total', 'รวมทั้งหมด')),
               trailing: Text(money.format(total),
-                  style: const TextStyle(
-                      color: AppTheme.primary, fontWeight: FontWeight.bold))),
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.bold))),
         ],
       ),
     );

@@ -1,18 +1,22 @@
 import 'package:dio/dio.dart';
 
-import '../../../core/network/dio_provider.dart';
-import '../../product/model/product_model.dart';
+import '../../../../core/network/dio_provider.dart';
+import '../../../product/model/product_model.dart';
+import '../../domain/repositories/seller_repository.dart';
 
-class SellerRepository {
-  SellerRepository(this._dio);
+/// Dio-backed implementation of [SellerRepository].
+class SellerRepositoryImpl implements SellerRepository {
+  SellerRepositoryImpl(this._dio);
 
   final Dio _dio;
 
+  @override
   Future<Map<String, dynamic>> stats() async {
     final response = await _dio.get<dynamic>('/seller/stats');
     return apiPayload<Map<String, dynamic>>(response);
   }
 
+  @override
   Future<List<ProductModel>> products() async {
     final response = await _dio.get<dynamic>('/seller/products');
     final data = apiPayload<List<dynamic>?>(response) ?? const <dynamic>[];
@@ -21,6 +25,7 @@ class SellerRepository {
         .toList();
   }
 
+  @override
   Future<List<Map<String, dynamic>>> orders() async {
     final response = await _dio.get<dynamic>('/seller/orders');
     final data = apiPayload<List<dynamic>?>(response) ?? const <dynamic>[];

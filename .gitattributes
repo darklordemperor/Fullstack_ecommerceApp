@@ -1,0 +1,22 @@
+# Normalize line endings across platforms so tooling (gofmt, dart format,
+# golangci-lint) is deterministic regardless of a contributor's OS.
+* text=auto eol=lf
+
+*.go   text eol=lf
+*.dart text eol=lf
+*.sh   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+
+# Windows-only scripts must keep CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary assets: never touch.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.jar  binary
+*.keystore binary

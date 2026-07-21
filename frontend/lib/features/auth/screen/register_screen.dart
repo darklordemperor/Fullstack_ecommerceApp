@@ -9,7 +9,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/settings/app_settings.dart';
-import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_dimens.dart';
 import '../../../core/widget/app_ui.dart';
 import '../provider/auth_provider.dart';
 
@@ -33,6 +33,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final passwordRegex = RegExp(r'^[a-z0-9]{8,}$');
   String gender = 'Other';
   String profileImage = '';
+  bool _obscurePassword = true;
+  bool _obscureConfirm = true;
 
   @override
   void dispose() {
@@ -48,6 +50,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     final loading = ref.watch(authProvider).loading;
     return Scaffold(
       appBar: AppBar(
@@ -59,277 +63,301 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             constraints: const BoxConstraints(maxWidth: 520),
             child: Form(
               key: formKey,
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primary.withValues(alpha: .10),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                          color: AppTheme.primary.withValues(alpha: .16)),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 52,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(18),
+              child: AutofillGroup(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(
+                      AppSpace.lg, AppSpace.md, AppSpace.lg, AppSpace.xl),
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(AppSpace.lg),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withValues(alpha: .10),
+                        borderRadius: AppRadius.brXl,
+                        border: Border.all(
+                            color: colors.primary.withValues(alpha: .16)),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 52,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: colors.surface,
+                              borderRadius: AppRadius.brLg,
+                            ),
+                            child: Icon(Icons.person_add_alt_1_rounded,
+                                color: colors.primary),
                           ),
-                          child: const Icon(Icons.person_add_alt_1_rounded,
-                              color: AppTheme.primaryDark),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          AppSpace.gapMd,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(tr(ref, 'Buyer account', 'บัญชีผู้ซื้อ'),
+                                    style: theme.textTheme.headlineSmall),
+                                AppSpace.gapXs,
+                                Text(
+                                    tr(ref, 'Create your shopping profile.',
+                                        'สร้างโปรไฟล์สำหรับการซื้อสินค้า'),
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                        color: colors.onSurfaceVariant)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    AppSpace.gapLg,
+                    AppInfoPanel(
+                      padding: const EdgeInsets.all(AppSpace.lg),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _SectionTitle(
+                            icon: Icons.badge_outlined,
+                            title: tr(ref, 'Personal details', 'ข้อมูลส่วนตัว'),
+                          ),
+                          AppSpace.gapMd,
+                          Row(
                             children: [
-                              Text(tr(ref, 'Buyer account', 'บัญชีผู้ซื้อ'),
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headlineSmall
-                                      ?.copyWith(fontSize: 24)),
-                              const SizedBox(height: 4),
-                              Text(
-                                  tr(ref, 'Create your shopping profile.',
-                                      'สร้างโปรไฟล์สำหรับการซื้อสินค้า'),
-                                  style:
-                                      const TextStyle(color: AppTheme.subtext)),
+                              CircleAvatar(
+                                radius: 36,
+                                backgroundColor:
+                                    colors.primary.withValues(alpha: .10),
+                                child: ClipOval(
+                                  child: profileImage.isEmpty
+                                      ? Icon(
+                                          Icons.person_outline_rounded,
+                                          color: colors.primary,
+                                          size: 34,
+                                        )
+                                      : AppProductImage(
+                                          image: profileImage,
+                                          width: 72,
+                                          height: 72,
+                                          semanticLabel: tr(ref,
+                                              'Profile photo', 'รูปโปรไฟล์'),
+                                        ),
+                                ),
+                              ),
+                              AppSpace.gapMd,
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      tr(ref, 'Profile photo', 'รูปโปรไฟล์'),
+                                      style: theme.textTheme.titleSmall,
+                                    ),
+                                    AppSpace.gapSm,
+                                    Wrap(
+                                      spacing: AppSpace.sm,
+                                      runSpacing: AppSpace.sm,
+                                      children: [
+                                        OutlinedButton.icon(
+                                          onPressed: () => pickProfileImage(
+                                              ImageSource.gallery),
+                                          icon:
+                                              const Icon(Icons.photo_outlined),
+                                          label: Text(
+                                              tr(ref, 'Gallery', 'แกลเลอรี')),
+                                        ),
+                                        OutlinedButton.icon(
+                                          onPressed: () => pickProfileImage(
+                                              ImageSource.camera),
+                                          icon: const Icon(
+                                              Icons.photo_camera_outlined),
+                                          label:
+                                              Text(tr(ref, 'Camera', 'กล้อง')),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  AppInfoPanel(
-                    padding: const EdgeInsets.all(18),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _SectionTitle(
-                          icon: Icons.badge_outlined,
-                          title: tr(ref, 'Personal details', 'ข้อมูลส่วนตัว'),
-                        ),
-                        const SizedBox(height: 14),
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 36,
-                              backgroundColor:
-                                  AppTheme.primary.withValues(alpha: .10),
-                              child: ClipOval(
-                                child: profileImage.isEmpty
-                                    ? const Icon(
-                                        Icons.person_outline_rounded,
-                                        color: AppTheme.primaryDark,
-                                        size: 34,
-                                      )
-                                    : AppProductImage(
-                                        image: profileImage,
-                                        width: 72,
-                                        height: 72,
-                                      ),
+                          AppSpace.gapMd,
+                          TextFormField(
+                              controller: name,
+                              textInputAction: TextInputAction.next,
+                              textCapitalization: TextCapitalization.words,
+                              autofillHints: const [AutofillHints.givenName],
+                              decoration: InputDecoration(
+                                labelText: tr(ref, 'Name', 'ชื่อ'),
+                                prefixIcon:
+                                    const Icon(Icons.person_outline_rounded),
                               ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    tr(ref, 'Profile photo', 'รูปโปรไฟล์'),
-                                    style:
-                                        Theme.of(context).textTheme.titleSmall,
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Wrap(
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    children: [
-                                      OutlinedButton.icon(
-                                        onPressed: () => pickProfileImage(
-                                            ImageSource.gallery),
-                                        icon: const Icon(Icons.photo_outlined),
-                                        label: Text(
-                                            tr(ref, 'Gallery', 'แกลเลอรี')),
-                                      ),
-                                      OutlinedButton.icon(
-                                        onPressed: () => pickProfileImage(
-                                            ImageSource.camera),
-                                        icon: const Icon(
-                                            Icons.photo_camera_outlined),
-                                        label: Text(tr(ref, 'Camera', 'กล้อง')),
-                                      ),
+                              validator: (value) => _requiredField(value,
+                                  tr(ref, 'Required', 'จำเป็นต้องกรอก'))),
+                          AppSpace.gapMd,
+                          TextFormField(
+                              controller: lastname,
+                              textInputAction: TextInputAction.next,
+                              textCapitalization: TextCapitalization.words,
+                              autofillHints: const [AutofillHints.familyName],
+                              decoration: InputDecoration(
+                                labelText: tr(ref, 'Lastname', 'นามสกุล'),
+                                prefixIcon:
+                                    const Icon(Icons.person_search_outlined),
+                              ),
+                              validator: (value) => _requiredField(value,
+                                  tr(ref, 'Required', 'จำเป็นต้องกรอก'))),
+                          AppSpace.gapMd,
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                    controller: age,
+                                    textInputAction: TextInputAction.next,
+                                    keyboardType: TextInputType.number,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.digitsOnly,
+                                      LengthLimitingTextInputFormatter(3),
                                     ],
-                                  ),
-                                ],
+                                    decoration: InputDecoration(
+                                      labelText: tr(ref, 'Age', 'อายุ'),
+                                      prefixIcon:
+                                          const Icon(Icons.cake_outlined),
+                                    ),
+                                    validator: (v) =>
+                                        (int.tryParse(v ?? '') ?? 0) < 18
+                                            ? tr(ref, 'Must be at least 18',
+                                                'ต้องมีอายุอย่างน้อย 18 ปี')
+                                            : null),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-                        TextFormField(
-                            controller: name,
-                            textInputAction: TextInputAction.next,
-                            decoration: InputDecoration(
-                              labelText: tr(ref, 'Name', 'ชื่อ'),
-                              prefixIcon:
-                                  const Icon(Icons.person_outline_rounded),
-                            ),
-                            validator: (value) => _requiredField(
-                                value, tr(ref, 'Required', 'จำเป็นต้องกรอก'))),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                            controller: lastname,
-                            textInputAction: TextInputAction.next,
-                            decoration: InputDecoration(
-                              labelText: tr(ref, 'Lastname', 'นามสกุล'),
-                              prefixIcon:
-                                  const Icon(Icons.person_search_outlined),
-                            ),
-                            validator: (value) => _requiredField(
-                                value, tr(ref, 'Required', 'จำเป็นต้องกรอก'))),
-                        const SizedBox(height: 12),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: TextFormField(
-                                  controller: age,
-                                  textInputAction: TextInputAction.next,
-                                  keyboardType: TextInputType.number,
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.digitsOnly,
-                                    LengthLimitingTextInputFormatter(3),
-                                  ],
+                              AppSpace.gapMd,
+                              Expanded(
+                                child: DropdownButtonFormField<String>(
+                                  initialValue: gender,
                                   decoration: InputDecoration(
-                                    labelText: tr(ref, 'Age', 'อายุ'),
-                                    prefixIcon: const Icon(Icons.cake_outlined),
+                                    labelText: tr(ref, 'Gender', 'เพศ'),
+                                    prefixIcon: const Icon(Icons.wc_outlined),
                                   ),
-                                  validator: (v) =>
-                                      (int.tryParse(v ?? '') ?? 0) < 18
-                                          ? tr(ref, 'Must be at least 18',
-                                              'ต้องมีอายุอย่างน้อย 18 ปี')
-                                          : null),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: DropdownButtonFormField<String>(
-                                initialValue: gender,
-                                decoration: InputDecoration(
-                                  labelText: tr(ref, 'Gender', 'เพศ'),
-                                  prefixIcon: const Icon(Icons.wc_outlined),
+                                  items: const ['Female', 'Male', 'Other']
+                                      .map((value) => DropdownMenuItem(
+                                          value: value,
+                                          child: Text(genderLabel(ref, value))))
+                                      .toList(),
+                                  onChanged: (value) =>
+                                      setState(() => gender = value ?? gender),
                                 ),
-                                items: const ['Female', 'Male', 'Other']
-                                    .map((value) => DropdownMenuItem(
-                                        value: value,
-                                        child: Text(genderLabel(ref, value))))
-                                    .toList(),
-                                onChanged: (value) =>
-                                    setState(() => gender = value ?? gender),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                            controller: address,
-                            minLines: 2,
-                            maxLines: 3,
-                            decoration: InputDecoration(
-                              labelText:
-                                  tr(ref, 'Delivery address', 'ที่อยู่จัดส่ง'),
-                              prefixIcon:
-                                  const Icon(Icons.location_on_outlined),
-                            ),
-                            validator: (value) => _requiredField(
-                                value, tr(ref, 'Required', 'จำเป็นต้องกรอก'))),
-                      ],
+                            ],
+                          ),
+                          AppSpace.gapMd,
+                          TextFormField(
+                              controller: address,
+                              minLines: 2,
+                              maxLines: 3,
+                              autofillHints: const [
+                                AutofillHints.fullStreetAddress
+                              ],
+                              decoration: InputDecoration(
+                                labelText: tr(
+                                    ref, 'Delivery address', 'ที่อยู่จัดส่ง'),
+                                prefixIcon:
+                                    const Icon(Icons.location_on_outlined),
+                              ),
+                              validator: (value) => _requiredField(value,
+                                  tr(ref, 'Required', 'จำเป็นต้องกรอก'))),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 14),
-                  AppInfoPanel(
-                    padding: const EdgeInsets.all(18),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _SectionTitle(
-                          icon: Icons.lock_outline_rounded,
-                          title:
-                              tr(ref, 'Sign-in details', 'ข้อมูลเข้าสู่ระบบ'),
-                        ),
-                        const SizedBox(height: 14),
-                        TextFormField(
-                            controller: email,
-                            textInputAction: TextInputAction.next,
-                            keyboardType: TextInputType.emailAddress,
-                            decoration: InputDecoration(
-                              labelText: tr(ref, 'Email', 'อีเมล'),
-                              prefixIcon:
-                                  const Icon(Icons.mail_outline_rounded),
-                            ),
-                            validator: (v) => (v ?? '').contains('@')
-                                ? null
-                                : tr(ref, 'Valid email required',
-                                    'กรุณากรอกอีเมลให้ถูกต้อง')),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                            controller: password,
-                            textInputAction: TextInputAction.next,
-                            obscureText: true,
-                            decoration: InputDecoration(
-                              labelText: tr(ref, 'Password', 'รหัสผ่าน'),
-                              helperText: tr(
-                                  ref,
-                                  'Lowercase letters and numbers only, min 8 characters',
-                                  'ใช้ตัวพิมพ์เล็กและตัวเลขเท่านั้น อย่างน้อย 8 ตัว'),
-                              prefixIcon: const Icon(Icons.password_rounded),
-                            ),
-                            validator: (v) => passwordRegex.hasMatch(v ?? '')
-                                ? null
-                                : tr(ref, 'Invalid password',
-                                    'รหัสผ่านไม่ถูกต้อง')),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                            controller: confirm,
-                            obscureText: true,
-                            decoration: InputDecoration(
-                              labelText:
-                                  tr(ref, 'Confirm Password', 'ยืนยันรหัสผ่าน'),
-                              prefixIcon:
-                                  const Icon(Icons.verified_user_outlined),
-                            ),
-                            validator: (v) => v == password.text
-                                ? null
-                                : tr(ref, 'Passwords must match',
-                                    'รหัสผ่านต้องตรงกัน')),
-                      ],
+                    AppSpace.gapMd,
+                    AppInfoPanel(
+                      padding: const EdgeInsets.all(AppSpace.lg),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _SectionTitle(
+                            icon: Icons.lock_outline_rounded,
+                            title:
+                                tr(ref, 'Sign-in details', 'ข้อมูลเข้าสู่ระบบ'),
+                          ),
+                          AppSpace.gapMd,
+                          TextFormField(
+                              controller: email,
+                              textInputAction: TextInputAction.next,
+                              keyboardType: TextInputType.emailAddress,
+                              autofillHints: const [AutofillHints.email],
+                              decoration: InputDecoration(
+                                labelText: tr(ref, 'Email', 'อีเมล'),
+                                prefixIcon:
+                                    const Icon(Icons.mail_outline_rounded),
+                              ),
+                              validator: (v) => (v ?? '').contains('@')
+                                  ? null
+                                  : tr(ref, 'Valid email required',
+                                      'กรุณากรอกอีเมลให้ถูกต้อง')),
+                          AppSpace.gapMd,
+                          TextFormField(
+                              controller: password,
+                              textInputAction: TextInputAction.next,
+                              obscureText: _obscurePassword,
+                              autofillHints: const [AutofillHints.newPassword],
+                              decoration: InputDecoration(
+                                labelText: tr(ref, 'Password', 'รหัสผ่าน'),
+                                helperText: tr(
+                                    ref,
+                                    'Lowercase letters and numbers only, min 8 characters',
+                                    'ใช้ตัวพิมพ์เล็กและตัวเลขเท่านั้น อย่างน้อย 8 ตัว'),
+                                prefixIcon: const Icon(Icons.password_rounded),
+                                suffixIcon: _ObscureToggle(
+                                  obscured: _obscurePassword,
+                                  onPressed: () => setState(() =>
+                                      _obscurePassword = !_obscurePassword),
+                                ),
+                              ),
+                              validator: (v) => passwordRegex.hasMatch(v ?? '')
+                                  ? null
+                                  : tr(ref, 'Invalid password',
+                                      'รหัสผ่านไม่ถูกต้อง')),
+                          AppSpace.gapMd,
+                          TextFormField(
+                              controller: confirm,
+                              obscureText: _obscureConfirm,
+                              autofillHints: const [AutofillHints.newPassword],
+                              decoration: InputDecoration(
+                                labelText: tr(
+                                    ref, 'Confirm Password', 'ยืนยันรหัสผ่าน'),
+                                prefixIcon:
+                                    const Icon(Icons.verified_user_outlined),
+                                suffixIcon: _ObscureToggle(
+                                  obscured: _obscureConfirm,
+                                  onPressed: () => setState(
+                                      () => _obscureConfirm = !_obscureConfirm),
+                                ),
+                              ),
+                              validator: (v) => v == password.text
+                                  ? null
+                                  : tr(ref, 'Passwords must match',
+                                      'รหัสผ่านต้องตรงกัน')),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton.icon(
-                    onPressed: loading ? null : submit,
-                    icon: loading
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.arrow_forward_rounded),
-                    label: Text(loading
-                        ? tr(ref, 'Creating...', 'กำลังสร้างบัญชี...')
-                        : tr(ref, 'Create account', 'สร้างบัญชี')),
-                  ),
-                  const SizedBox(height: 8),
-                  TextButton(
-                      onPressed: () => context.go('/login'),
-                      child: Text(tr(ref, 'Already have an account? Login',
-                          'มีบัญชีอยู่แล้ว? เข้าสู่ระบบ'))),
-                ],
+                    AppSpace.gapLg,
+                    ElevatedButton.icon(
+                      onPressed: loading ? null : submit,
+                      icon: loading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.arrow_forward_rounded),
+                      label: Text(loading
+                          ? tr(ref, 'Creating...', 'กำลังสร้างบัญชี...')
+                          : tr(ref, 'Create account', 'สร้างบัญชี')),
+                    ),
+                    AppSpace.gapSm,
+                    TextButton(
+                        onPressed: () => context.go('/login'),
+                        child: Text(tr(ref, 'Already have an account? Login',
+                            'มีบัญชีอยู่แล้ว? เข้าสู่ระบบ'))),
+                  ],
+                ),
               ),
             ),
           ),
@@ -386,6 +414,24 @@ String profileImageDataUri(List<int> bytes) {
   return 'data:image/jpeg;base64,${base64Encode(bytes)}';
 }
 
+/// Show/hide toggle for password fields.
+class _ObscureToggle extends StatelessWidget {
+  const _ObscureToggle({required this.obscured, required this.onPressed});
+
+  final bool obscured;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: obscured ? 'Show password' : 'Hide password',
+      icon: Icon(
+          obscured ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+      onPressed: onPressed,
+    );
+  }
+}
+
 class _SectionTitle extends StatelessWidget {
   const _SectionTitle({required this.icon, required this.title});
 
@@ -394,18 +440,19 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Row(
       children: [
         Container(
           width: 34,
           height: 34,
           decoration: BoxDecoration(
-            color: AppTheme.primary.withValues(alpha: .10),
-            borderRadius: BorderRadius.circular(12),
+            color: colors.primary.withValues(alpha: .10),
+            borderRadius: AppRadius.brMd,
           ),
-          child: Icon(icon, size: 19, color: AppTheme.primaryDark),
+          child: Icon(icon, size: 19, color: colors.primary),
         ),
-        const SizedBox(width: 10),
+        AppSpace.gapSm,
         Text(
           title,
           style: Theme.of(context)

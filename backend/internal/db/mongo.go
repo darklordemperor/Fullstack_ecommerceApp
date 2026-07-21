@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
@@ -14,11 +13,27 @@ type Mongo struct {
 	Database *mongo.Database
 }
 
-func Connect(uri, database string) (*Mongo, error) {
+// Connect opens a pooled MongoDB connection. Schema setup (indexes, backfills)
+// is handled separately by RunMigrations so it is versioned and tracked.
+//
+// A bounded connection pool lets many concurrent requests share a small set of
+// sockets instead of opening one per request (which would exhaust the database
+// under load) — the pool is what makes the API scale horizontally: add more
+// API nodes behind a load balancer and each keeps its own capped pool. The
+// server-selection timeout ensures a request fails fast with an error rather
+// than blocking indefinitely when no healthy node is reachable.
+func Connect(uri, database string, maxPool, minPool uint64) (*Mongo, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	client, err := mongo.Connect(options.Client().ApplyURI(uri))
+	opts := options.Client().
+		ApplyURI(uri).
+		SetMaxPoolSize(maxPool).
+		SetMinPoolSize(minPool).
+		SetServerSelectionTimeout(5 * time.Second).
+		SetRetryWrites(true)
+
+	client, err := mongo.Connect(opts)
 	if err != nil {
 		return nil, err
 	}
@@ -26,20 +41,5 @@ func Connect(uri, database string) (*Mongo, error) {
 		return nil, err
 	}
 
-	m := &Mongo{Client: client, Database: client.Database(database)}
-	return m, m.ensureIndexes(ctx)
-}
-
-func (m *Mongo) ensureIndexes(ctx context.Context) error {
-	_, err := m.Database.Collection("users").Indexes().CreateOne(ctx, mongo.IndexModel{
-		Keys:    bson.D{{Key: "email", Value: 1}},
-		Options: options.Index().SetUnique(true),
-	})
-	if err != nil {
-		return err
-	}
-	_, err = m.Database.Collection("products").Indexes().CreateOne(ctx, mongo.IndexModel{
-		Keys: bson.D{{Key: "seller_id", Value: 1}},
-	})
-	return err
+	return &Mongo{Client: client, Database: client.Database(database)}, nil
 }

@@ -1,7 +1,6 @@
-import 'package:dio/dio.dart';
+import 'package:ecommerce_frontend/features/product/domain/repositories/product_repository.dart';
 import 'package:ecommerce_frontend/features/product/model/product_model.dart';
 import 'package:ecommerce_frontend/features/product/provider/product_provider.dart';
-import 'package:ecommerce_frontend/features/product/repository/product_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -52,8 +51,8 @@ void main() {
   });
 }
 
-class _FakeProductRepository extends ProductRepository {
-  _FakeProductRepository(this.product) : super(Dio());
+class _FakeProductRepository implements ProductRepository {
+  _FakeProductRepository(this.product);
 
   ProductModel product;
   int detailCalls = 0;
@@ -63,4 +62,24 @@ class _FakeProductRepository extends ProductRepository {
     detailCalls++;
     return product;
   }
+
+  @override
+  Future<List<ProductModel>> list({
+    String? category,
+    String? search,
+    int? page,
+    int? limit,
+  }) =>
+      throw UnimplementedError();
+
+  @override
+  Future<ProductModel> create(Map<String, dynamic> body) =>
+      throw UnimplementedError();
+
+  @override
+  Future<ProductModel> update(String id, Map<String, dynamic> body) =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> delete(String id) => throw UnimplementedError();
 }

@@ -5,11 +5,15 @@ import (
 	"errors"
 	"time"
 
+	"ecommerce/backend/internal/domain"
 	"ecommerce/backend/internal/model"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
+
+// Compile-time proof the MongoDB implementation satisfies the domain port.
+var _ domain.ProductRepository = (*ProductRepository)(nil)
 
 type ProductRepository struct {
 	collection *mongo.Collection

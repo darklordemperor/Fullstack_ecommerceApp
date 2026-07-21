@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/settings/app_settings.dart';
+import '../../../core/theme/app_dimens.dart';
 import '../../../core/widget/app_ui.dart';
 import '../provider/admin_provider.dart';
 
@@ -44,7 +45,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                   message: friendlyError(e),
                   onRetry: () => ref.invalidate(adminStatsProvider)),
               data: (s) => Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(AppSpace.md),
                 child: Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -113,7 +114,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                             title: Row(
                               children: [
                                 Expanded(child: Text(user.fullName)),
-                                const SizedBox(width: 8),
+                                AppSpace.gapSm,
                                 Chip(
                                   visualDensity: VisualDensity.compact,
                                   label: Text(user.banned
@@ -193,7 +194,7 @@ class _TabLabel extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(icon, size: 18),
-        const SizedBox(width: 8),
+        AppSpace.gapSm,
         Flexible(
           child: Text(
             label,
@@ -217,7 +218,7 @@ class _Stat extends StatelessWidget {
       width: 150,
       child: Card(
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(AppSpace.md),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

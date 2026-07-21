@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_dimens.dart';
 import '../../../core/widget/app_ui.dart';
 import '../model/product_model.dart';
 
@@ -14,6 +14,7 @@ class ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -25,26 +26,30 @@ class ProductCard extends StatelessWidget {
               child: Stack(
                 children: [
                   Positioned.fill(
-                    child: AppProductImage(image: product.mainImage),
+                    child: AppProductImage(
+                      image: product.mainImage,
+                      semanticLabel: product.name,
+                    ),
                   ),
                   Positioned(
-                    left: 10,
-                    top: 10,
+                    left: AppSpace.sm,
+                    top: AppSpace.sm,
                     child: DecoratedBox(
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: .92),
-                        borderRadius: BorderRadius.circular(999),
+                        // Surface-toned (not hardcoded white) so the badge stays
+                        // legible over the image in both light and dark themes.
+                        color: colors.surface.withValues(alpha: .92),
+                        borderRadius: AppRadius.brPill,
                       ),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
+                            horizontal: AppSpace.md, vertical: AppSpace.xs),
                         child: Text(
                           product.category,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: AppTheme.text,
-                            fontSize: 11,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: colors.onSurface,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -55,7 +60,7 @@ class ProductCard extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(AppSpace.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -64,29 +69,29 @@ class ProductCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleSmall
                           ?.copyWith(fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 8),
+                  AppSpace.gapSm,
                   Text(
-                    NumberFormat.currency(locale: 'th_TH', symbol: '\u0E3F')
+                    NumberFormat.currency(locale: 'th_TH', symbol: '฿')
                         .format(product.price),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        color: AppTheme.primaryDark,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: colors.primary,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                  const SizedBox(height: 6),
+                  AppSpace.gapXs,
                   Row(
                     children: [
-                      const Icon(Icons.storefront_rounded,
-                          size: 14, color: AppTheme.subtext),
-                      const SizedBox(width: 4),
+                      Icon(Icons.storefront_rounded,
+                          size: AppIconSize.sm, color: colors.onSurfaceVariant),
+                      AppSpace.gapXs,
                       Expanded(
                         child: Text(product.sellerName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                color: AppTheme.subtext, fontSize: 12)),
+                            style: theme.textTheme.bodySmall
+                                ?.copyWith(color: colors.onSurfaceVariant)),
                       ),
                     ],
                   ),

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/responsive.dart';
 import '../../../core/settings/app_settings.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../core/widget/app_ui.dart';
 import '../../auth/provider/auth_provider.dart';
 import '../../cart/provider/cart_provider.dart';
@@ -26,6 +26,7 @@ class HomeScreen extends ConsumerWidget {
     final cart = ref.watch(cartProvider);
     final products = ref.watch(productsProvider);
     final selected = ref.watch(categoryProvider);
+    final wide = context.isExpanded;
     return Scaffold(
       appBar: AppBar(
         title: const Text('ShopApp'),
@@ -48,11 +49,11 @@ class HomeScreen extends ConsumerWidget {
                 top: 6,
                 child: CircleAvatar(
                   radius: 10,
-                  backgroundColor: AppTheme.primary,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
                   child: Text(
                     '${cart.valueOrNull?.count ?? 0}',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimary,
                       fontSize: 10,
                       fontWeight: FontWeight.w800,
                     ),
@@ -63,123 +64,153 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
-      drawer: const ShopDrawer(),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          ref.invalidate(productsProvider);
-        },
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      tr(ref, 'Discover products', 'เลือกซื้อสินค้า'),
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineMedium
-                          ?.copyWith(fontWeight: FontWeight.w900),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      tr(ref, 'Curated picks from trusted sellers.',
-                          'สินค้าคัดสรรจากผู้ขายที่เชื่อถือได้'),
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
+      // Adaptive navigation: a permanent side drawer on expanded windows
+      // (tablet / desktop / wide split-view pane), a hamburger drawer on
+      // compact and medium — driven purely by the window (pane) width.
+      drawer: wide ? null : const ShopDrawer(),
+      body: Row(
+        children: [
+          if (wide) const ShopDrawer(),
+          Expanded(
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: context.contentMaxWidth),
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    ref.invalidate(productsProvider);
+                  },
+                  child: CustomScrollView(
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                tr(ref, 'Discover products', 'เลือกซื้อสินค้า'),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineMedium
+                                    ?.copyWith(fontWeight: FontWeight.w900),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                tr(ref, 'Curated picks from trusted sellers.',
+                                    'สินค้าคัดสรรจากผู้ขายที่เชื่อถือได้'),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                    ),
+                              ),
+                              const SizedBox(height: 16),
+                              TextField(
+                                decoration: InputDecoration(
+                                  prefixIcon: const Icon(Icons.search_rounded),
+                                  hintText:
+                                      tr(ref, 'Search products', 'ค้นหาสินค้า'),
+                                  filled: true,
+                                ),
+                                textInputAction: TextInputAction.search,
+                                onSubmitted: (value) => ref
+                                    .read(searchProvider.notifier)
+                                    .state = value,
+                              ),
+                            ],
                           ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      decoration: InputDecoration(
-                        prefixIcon: const Icon(Icons.search_rounded),
-                        hintText: tr(ref, 'Search products', 'ค้นหาสินค้า'),
-                        filled: true,
+                        ),
                       ),
-                      textInputAction: TextInputAction.search,
-                      onSubmitted: (value) =>
-                          ref.read(searchProvider.notifier).state = value,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Container(
-                height: 52,
-                margin: const EdgeInsets.only(bottom: 8),
-                child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  scrollDirection: Axis.horizontal,
-                  itemCount: categories.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 10),
-                  itemBuilder: (_, i) => ChoiceChip(
-                    label: Text(categoryLabel(ref, categories[i])),
-                    selected: selected == categories[i],
-                    showCheckmark: false,
-                    avatar: selected == categories[i]
-                        ? const Icon(Icons.check_rounded, size: 16)
-                        : null,
-                    onSelected: (_) {
-                      ref.read(categoryProvider.notifier).state = categories[i];
-                    },
+                      SliverToBoxAdapter(
+                        child: Container(
+                          height: 52,
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: ListView.separated(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            scrollDirection: Axis.horizontal,
+                            itemCount: categories.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(width: 10),
+                            itemBuilder: (_, i) => ChoiceChip(
+                              label: Text(categoryLabel(ref, categories[i])),
+                              selected: selected == categories[i],
+                              showCheckmark: false,
+                              avatar: selected == categories[i]
+                                  ? const Icon(Icons.check_rounded, size: 16)
+                                  : null,
+                              onSelected: (_) {
+                                ref.read(categoryProvider.notifier).state =
+                                    categories[i];
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+                      products.when(
+                        data: (items) {
+                          if (items.isEmpty) {
+                            return SliverFillRemaining(
+                              child: AppEmptyState(
+                                icon: Icons.inventory_2_outlined,
+                                title: tr(
+                                    ref, 'No products yet', 'ยังไม่มีสินค้า'),
+                                message: tr(
+                                    ref,
+                                    'Products will appear here after sellers add them.',
+                                    'สินค้าจะแสดงที่นี่เมื่อผู้ขายเพิ่มสินค้า'),
+                                action: OutlinedButton.icon(
+                                  onPressed: () =>
+                                      ref.invalidate(productsProvider),
+                                  icon: const Icon(Icons.refresh),
+                                  label: Text(tr(ref, 'Refresh', 'รีเฟรช')),
+                                ),
+                              ),
+                            );
+                          }
+                          return SliverPadding(
+                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+                            sliver: SliverGrid(
+                              // Columns derived from the available width, so the grid
+                              // reflows: ~1-2 in a narrow split-view pane, 4+ on a tablet
+                              // or wide window — no device/orientation checks needed.
+                              gridDelegate:
+                                  const SliverGridDelegateWithMaxCrossAxisExtent(
+                                maxCrossAxisExtent: 200,
+                                childAspectRatio: .64,
+                                crossAxisSpacing: 14,
+                                mainAxisSpacing: 14,
+                              ),
+                              delegate: SliverChildBuilderDelegate(
+                                (_, i) => ProductCard(
+                                  product: items[i],
+                                  onTap: () =>
+                                      context.push('/products/${items[i].id}'),
+                                ),
+                                childCount: items.length,
+                              ),
+                            ),
+                          );
+                        },
+                        loading: () => const SliverFillRemaining(
+                            child: Center(child: CircularProgressIndicator())),
+                        error: (e, _) => SliverFillRemaining(
+                          child: AppErrorState(
+                            message: friendlyError(e),
+                            onRetry: () => ref.invalidate(productsProvider),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
-            products.when(
-              data: (items) {
-                if (items.isEmpty) {
-                  return SliverFillRemaining(
-                    child: AppEmptyState(
-                      icon: Icons.inventory_2_outlined,
-                      title: tr(ref, 'No products yet', 'ยังไม่มีสินค้า'),
-                      message: tr(
-                          ref,
-                          'Products will appear here after sellers add them.',
-                          'สินค้าจะแสดงที่นี่เมื่อผู้ขายเพิ่มสินค้า'),
-                      action: OutlinedButton.icon(
-                        onPressed: () => ref.invalidate(productsProvider),
-                        icon: const Icon(Icons.refresh),
-                        label: Text(tr(ref, 'Refresh', 'รีเฟรช')),
-                      ),
-                    ),
-                  );
-                }
-                return SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
-                  sliver: SliverGrid(
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: .64,
-                      crossAxisSpacing: 14,
-                      mainAxisSpacing: 14,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (_, i) => ProductCard(
-                        product: items[i],
-                        onTap: () => context.push('/products/${items[i].id}'),
-                      ),
-                      childCount: items.length,
-                    ),
-                  ),
-                );
-              },
-              loading: () => const SliverFillRemaining(
-                  child: Center(child: CircularProgressIndicator())),
-              error: (e, _) => SliverFillRemaining(
-                child: AppErrorState(
-                  message: friendlyError(e),
-                  onRetry: () => ref.invalidate(productsProvider),
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -371,7 +402,7 @@ class _DrawerTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final foreground = danger
-        ? AppTheme.primaryDark
+        ? Theme.of(context).colorScheme.primary
         : selected
             ? colors.primary
             : colors.onSurfaceVariant;
@@ -381,7 +412,7 @@ class _DrawerTile extends StatelessWidget {
         color: selected
             ? colors.primary.withValues(alpha: .12)
             : danger
-                ? AppTheme.primary.withValues(alpha: .08)
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: .08)
                 : Colors.transparent,
         borderRadius: BorderRadius.circular(18),
         child: InkWell(
@@ -496,7 +527,9 @@ class _LanguagePill extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-          color: selected ? AppTheme.primaryDark : colors.onSurfaceVariant,
+          color: selected
+              ? Theme.of(context).colorScheme.primary
+              : colors.onSurfaceVariant,
           fontWeight: FontWeight.w900,
           fontSize: 11,
         ),

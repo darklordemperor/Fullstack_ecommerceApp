@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/config/env_config.dart';
@@ -7,11 +6,11 @@ import 'core/router/app_router.dart';
 import 'core/settings/app_settings.dart';
 import 'core/theme/app_theme.dart';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-  ]);
+void main() {
+  // Orientation is declared per device in Info.plist / AndroidManifest, not
+  // locked here: a runtime portrait lock is an anti-pattern for a multitasking
+  // iPad app (it fights Split View / Slide Over). iPhone stays portrait via
+  // Info.plist; iPad and Android are free to rotate and resize.
   runApp(const ProviderScope(child: ShopApp()));
 }
 

@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
+import 'package:ecommerce_frontend/features/cart/domain/repositories/cart_repository.dart';
 import 'package:ecommerce_frontend/features/cart/model/cart_model.dart';
 import 'package:ecommerce_frontend/features/cart/provider/cart_provider.dart';
-import 'package:ecommerce_frontend/features/cart/repository/cart_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -49,9 +49,7 @@ void main() {
   });
 }
 
-class _FakeCartRepository extends CartRepository {
-  _FakeCartRepository() : super(Dio());
-
+class _FakeCartRepository implements CartRepository {
   bool failMutations = false;
   CartModel cart = CartModel.fromJson({
     'id': 'cart1',
@@ -96,6 +94,21 @@ class _FakeCartRepository extends CartRepository {
     );
     return cart;
   }
+
+  @override
+  Future<CartModel> add(String productId, int quantity) =>
+      throw UnimplementedError();
+
+  @override
+  Future<CartModel> clear() => throw UnimplementedError();
+
+  @override
+  Future<CartModel> checkout(List<String> productIds) =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> buyNow(String productId, int quantity) =>
+      throw UnimplementedError();
 
   void _maybeFail(String path) {
     if (failMutations) {

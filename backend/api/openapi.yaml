@@ -1,0 +1,592 @@
+openapi: 3.0.3
+info:
+  title: E-Commerce API
+  version: "1.0.0"
+  description: |
+    Backend API for the full-stack e-commerce app (Go/Gin + MongoDB).
+
+    Conventions:
+    - Every successful response is wrapped: `{ "data": <payload>, "message": <string> }`.
+    - Every error response is `{ "error": <string>, "code": <machine-code>, "request_id": <id> }`.
+      The `code` is stable and safe to branch on; `request_id` (also returned in the
+      `X-Request-ID` response header) correlates the failure to server logs.
+    - Auth uses a short-lived JWT access token (Bearer) plus a rotating refresh token.
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development
+  - url: https://api.shopapp.example.com/api/v1
+    description: Production (placeholder)
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: auth
+  - name: users
+  - name: products
+  - name: cart
+  - name: seller
+  - name: admin
+  - name: ops
+
+paths:
+  /auth/register:
+    post:
+      tags: [auth]
+      summary: Register a customer account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RegisterRequest" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties: { data: { $ref: "#/components/schemas/User" } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "409": { $ref: "#/components/responses/Error" }
+
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Log in and receive an access + refresh token pair
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LoginRequest" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties: { data: { $ref: "#/components/schemas/AuthTokens" } }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /auth/refresh:
+    post:
+      tags: [auth]
+      summary: Exchange a refresh token for a new token pair (rotates the refresh token)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties: { refresh_token: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties: { data: { $ref: "#/components/schemas/AuthTokens" } }
+        "401": { $ref: "#/components/responses/Error" }
+
+  /auth/logout:
+    post:
+      tags: [auth]
+      summary: Revoke a refresh token
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { refresh_token: { type: string } }
+      responses:
+        "200": { description: OK }
+
+  /users/me:
+    get:
+      tags: [users]
+      summary: Get the current user's profile
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties: { data: { $ref: "#/components/schemas/User" } }
+        "401": { $ref: "#/components/responses/Error" }
+    put:
+      tags: [users]
+      summary: Update the current user's profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateProfileRequest" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties: { data: { $ref: "#/components/schemas/User" } }
+        "400": { $ref: "#/components/responses/Error" }
+
+  /users/seller-apply:
+    post:
+      tags: [users]
+      summary: Apply to become a seller
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SellerApplyRequest" }
+      responses:
+        "200": { description: OK }
+        "400": { $ref: "#/components/responses/Error" }
+
+  /products:
+    get:
+      tags: [products]
+      summary: List storefront products
+      security: []
+      parameters:
+        - { name: category, in: query, schema: { type: string } }
+        - { name: search, in: query, schema: { type: string } }
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, default: 20, maximum: 50 } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/Product" }
+    post:
+      tags: [products]
+      summary: Create a product (approved sellers only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProductRequest" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties: { data: { $ref: "#/components/schemas/Product" } }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /products/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [products]
+      summary: Get a product by id
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties: { data: { $ref: "#/components/schemas/Product" } }
+        "404": { $ref: "#/components/responses/Error" }
+    put:
+      tags: [products]
+      summary: Update a product (owner seller only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProductRequest" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties: { data: { $ref: "#/components/schemas/Product" } }
+        "404": { $ref: "#/components/responses/Error" }
+    delete:
+      tags: [products]
+      summary: Delete a product (owner seller only)
+      responses:
+        "200": { description: OK }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /cart:
+    get:
+      tags: [cart]
+      summary: Get the current user's cart
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties: { data: { $ref: "#/components/schemas/Cart" } }
+
+  /cart/add:
+    post:
+      tags: [cart]
+      summary: Add an item to the cart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CartQuantityRequest" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties: { data: { $ref: "#/components/schemas/Cart" } }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /cart/update:
+    put:
+      tags: [cart]
+      summary: Set an item's quantity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CartQuantityRequest" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties: { data: { $ref: "#/components/schemas/Cart" } }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /cart/remove/{product_id}:
+    delete:
+      tags: [cart]
+      summary: Remove an item from the cart
+      parameters:
+        - { name: product_id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties: { data: { $ref: "#/components/schemas/Cart" } }
+
+  /cart/clear:
+    delete:
+      tags: [cart]
+      summary: Empty the cart
+      responses:
+        "200": { description: OK }
+
+  /cart/checkout:
+    post:
+      tags: [cart]
+      summary: Check out selected cart items (empty selection = whole cart)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                product_ids:
+                  type: array
+                  items: { type: string }
+      responses:
+        "200":
+          description: OK
+        "400": { $ref: "#/components/responses/Error" }
+
+  /cart/buy-now:
+    post:
+      tags: [cart]
+      summary: Buy a single product immediately
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CartQuantityRequest" }
+      responses:
+        "200": { description: OK }
+        "400": { $ref: "#/components/responses/Error" }
+
+  /seller/products:
+    get:
+      tags: [seller]
+      summary: List the seller's own products
+      responses:
+        "200": { description: OK }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /seller/orders:
+    get:
+      tags: [seller]
+      summary: List the seller's orders
+      responses:
+        "200": { description: OK }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /seller/stats:
+    get:
+      tags: [seller]
+      summary: Seller dashboard totals
+      responses:
+        "200": { description: OK }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /admin/stats:
+    get:
+      tags: [admin]
+      summary: Platform totals (admin only)
+      responses:
+        "200": { description: OK }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /admin/users:
+    get:
+      tags: [admin]
+      summary: List all users (admin only)
+      responses:
+        "200": { description: OK }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /admin/users/{id}/ban:
+    put:
+      tags: [admin]
+      summary: Ban or unban a user (admin only)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [banned]
+              properties: { banned: { type: boolean } }
+      responses:
+        "200": { description: OK }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /admin/products/{id}:
+    delete:
+      tags: [admin]
+      summary: Delete any product (admin only)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: OK }
+        "404": { $ref: "#/components/responses/Error" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    ValidationError:
+      description: Field validation failed
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: object
+                additionalProperties: { type: string }
+              code: { type: string, example: validation_error }
+              request_id: { type: string }
+
+  schemas:
+    Envelope:
+      type: object
+      properties:
+        data: {}
+        message: { type: string }
+
+    ErrorResponse:
+      type: object
+      properties:
+        error: { type: string }
+        code:
+          type: string
+          enum:
+            [
+              bad_request,
+              unauthorized,
+              forbidden,
+              not_found,
+              conflict,
+              validation_error,
+              internal_error,
+              rate_limited,
+            ]
+        request_id: { type: string }
+
+    AuthTokens:
+      type: object
+      properties:
+        token: { type: string, description: Short-lived JWT access token }
+        refresh_token: { type: string, description: Long-lived rotating refresh token }
+        user: { $ref: "#/components/schemas/User" }
+
+    User:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        lastname: { type: string }
+        age: { type: integer }
+        gender: { type: string }
+        email: { type: string, format: email }
+        role: { type: array, items: { type: string } }
+        banned: { type: boolean }
+        address: { type: string }
+        profile_image: { type: string }
+        shop_name: { type: string }
+        shop_location: { type: string }
+        tax_payer_number: { type: string }
+        seller_status: { type: string }
+
+    Product:
+      type: object
+      properties:
+        id: { type: string }
+        seller_id: { type: string }
+        seller_name: { type: string }
+        name: { type: string }
+        description: { type: string }
+        price: { type: number }
+        stock: { type: integer }
+        category: { type: string }
+        images: { type: array, items: { type: string } }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    CartItem:
+      type: object
+      properties:
+        product_id: { type: string }
+        seller_id: { type: string }
+        seller_name: { type: string }
+        name: { type: string }
+        price: { type: number }
+        image: { type: string }
+        quantity: { type: integer }
+
+    Cart:
+      type: object
+      properties:
+        id: { type: string }
+        user_id: { type: string }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/CartItem" }
+        updated_at: { type: string, format: date-time }
+
+    RegisterRequest:
+      type: object
+      required: [name, lastname, age, gender, address, email, password, confirm_password]
+      properties:
+        name: { type: string }
+        lastname: { type: string }
+        age: { type: integer, minimum: 18 }
+        gender: { type: string }
+        address: { type: string }
+        profile_image: { type: string }
+        email: { type: string, format: email }
+        password: { type: string, description: "lowercase letters and digits, min 8" }
+        confirm_password: { type: string }
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+
+    UpdateProfileRequest:
+      type: object
+      required: [name, lastname, age, gender, address]
+      properties:
+        name: { type: string }
+        lastname: { type: string }
+        age: { type: integer, minimum: 18 }
+        gender: { type: string }
+        address: { type: string }
+        profile_image: { type: string }
+
+    SellerApplyRequest:
+      type: object
+      required: [shop_name, shop_location, tax_payer_number]
+      properties:
+        shop_name: { type: string }
+        shop_location: { type: string }
+        tax_payer_number: { type: string }
+
+    ProductRequest:
+      type: object
+      required: [name, description, price, stock, category]
+      properties:
+        name: { type: string }
+        description: { type: string }
+        price: { type: number, minimum: 1, maximum: 1000000 }
+        stock: { type: integer, minimum: 0, maximum: 99 }
+        category: { type: string }
+        images: { type: array, items: { type: string } }
+
+    CartQuantityRequest:
+      type: object
+      required: [product_id, quantity]
+      properties:
+        product_id: { type: string }
+        quantity: { type: integer, minimum: 1, maximum: 99 }

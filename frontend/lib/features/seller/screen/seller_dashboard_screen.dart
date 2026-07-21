@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/settings/app_settings.dart';
+import '../../../core/theme/app_dimens.dart';
 import '../../../core/widget/app_ui.dart';
 import '../../product/provider/product_provider.dart';
 import '../provider/seller_provider.dart';
@@ -47,13 +48,13 @@ class SellerDashboardScreen extends ConsumerWidget {
             stats.when(
               loading: () => const LinearProgressIndicator(),
               error: (e, _) => Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(AppSpace.md),
                 child: AppErrorState(
                     message: friendlyError(e),
                     onRetry: () => ref.invalidate(sellerStatsProvider)),
               ),
               data: (s) => Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(AppSpace.md),
                 child: Row(
                   children: [
                     _StatCard(
@@ -99,7 +100,7 @@ class SellerDashboardScreen extends ConsumerWidget {
                       return ListView.separated(
                         padding: const EdgeInsets.fromLTRB(12, 4, 12, 96),
                         itemCount: items.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        separatorBuilder: (_, __) => AppSpace.gapSm,
                         itemBuilder: (_, i) => Card(
                           child: ListTile(
                             contentPadding: const EdgeInsets.all(10),
@@ -149,7 +150,7 @@ class SellerDashboardScreen extends ConsumerWidget {
                         );
                       }
                       return ListView.builder(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(AppSpace.md),
                         itemCount: items.length,
                         itemBuilder: (_, i) {
                           final order = items[i];
@@ -217,7 +218,7 @@ class _TabLabel extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(icon, size: 18),
-        const SizedBox(width: 8),
+        AppSpace.gapSm,
         Flexible(
           child: Text(
             label,
@@ -247,7 +248,7 @@ class _StatCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
+              AppSpace.gapXs,
               Text(label,
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 12)),

@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -14,7 +15,7 @@ func TestGenerateTokenAndAuthMiddlewareInjectsClaims(t *testing.T) {
 
 	secret := "unit-test-secret"
 	userID := bson.NewObjectID()
-	token, err := GenerateToken(secret, userID.Hex(), "seller@example.com", []string{"customer", "seller"})
+	token, err := GenerateToken(secret, userID.Hex(), "seller@example.com", []string{"customer", "seller"}, time.Hour)
 	if err != nil {
 		t.Fatalf("GenerateToken returned error: %v", err)
 	}

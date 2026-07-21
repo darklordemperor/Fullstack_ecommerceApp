@@ -1,7 +1,6 @@
-import 'package:dio/dio.dart';
+import 'package:ecommerce_frontend/features/cart/domain/repositories/cart_repository.dart';
 import 'package:ecommerce_frontend/features/cart/model/cart_model.dart';
 import 'package:ecommerce_frontend/features/cart/provider/cart_provider.dart';
-import 'package:ecommerce_frontend/features/cart/repository/cart_repository.dart';
 import 'package:ecommerce_frontend/features/cart/screen/cart_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,9 +31,7 @@ void main() {
   });
 }
 
-class _CartRepository extends CartRepository {
-  _CartRepository() : super(Dio());
-
+class _CartRepository implements CartRepository {
   @override
   Future<CartModel> get() async {
     return CartModel.fromJson({
@@ -52,4 +49,26 @@ class _CartRepository extends CartRepository {
       ],
     });
   }
+
+  @override
+  Future<CartModel> add(String productId, int quantity) =>
+      throw UnimplementedError();
+
+  @override
+  Future<CartModel> update(String productId, int quantity) =>
+      throw UnimplementedError();
+
+  @override
+  Future<CartModel> remove(String productId) => throw UnimplementedError();
+
+  @override
+  Future<CartModel> clear() => throw UnimplementedError();
+
+  @override
+  Future<CartModel> checkout(List<String> productIds) =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> buyNow(String productId, int quantity) =>
+      throw UnimplementedError();
 }

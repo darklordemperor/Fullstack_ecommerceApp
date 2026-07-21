@@ -1,0 +1,8 @@
+# Never bake secrets or local/dev artifacts into the image.
+.env
+.env.*
+*_test.go
+coverage.out
+Dockerfile
+.dockerignore
+.golangci.yml

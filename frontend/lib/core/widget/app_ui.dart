@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../settings/app_settings.dart';
+import '../theme/app_dimens.dart';
 
 class AppBackButton extends StatelessWidget {
   const AppBackButton({super.key, this.fallback = '/home'});
@@ -126,7 +127,7 @@ class AppSegmentedTabBar extends StatelessWidget
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: colors.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: AppRadius.brLg,
           border: Border.all(color: colors.outlineVariant),
         ),
         child: TabBar(
@@ -138,7 +139,7 @@ class AppSegmentedTabBar extends StatelessWidget
           unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),
           indicator: BoxDecoration(
             color: colors.surface,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: AppRadius.brSm,
             boxShadow: const [
               BoxShadow(
                 color: Color(0x14000000),
@@ -147,7 +148,7 @@ class AppSegmentedTabBar extends StatelessWidget
               ),
             ],
           ),
-          padding: const EdgeInsets.all(4),
+          padding: const EdgeInsets.all(AppSpace.xs),
           tabs: tabs,
         ),
       ),
@@ -172,7 +173,7 @@ class AppInfoPanel extends StatelessWidget {
       padding: padding,
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: AppRadius.brXl,
         border: Border.all(color: colors.outlineVariant),
         boxShadow: const [
           BoxShadow(
@@ -212,6 +213,7 @@ class AppProductImage extends StatelessWidget {
     this.fit = BoxFit.cover,
     this.width,
     this.height,
+    this.semanticLabel,
   });
 
   final String image;
@@ -219,8 +221,18 @@ class AppProductImage extends StatelessWidget {
   final double? width;
   final double? height;
 
+  /// Accessibility label announced for this image (e.g. the product name).
+  /// When null/empty the image is treated as decorative.
+  final String? semanticLabel;
+
   @override
   Widget build(BuildContext context) {
+    final child = _resolveImage();
+    if (semanticLabel == null || semanticLabel!.isEmpty) return child;
+    return Semantics(label: semanticLabel, image: true, child: child);
+  }
+
+  Widget _resolveImage() {
     if (image.startsWith('data:image')) {
       final commaIndex = image.indexOf(',');
       if (commaIndex != -1) {

@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/settings/app_settings.dart';
+import '../../../core/theme/app_dimens.dart';
 import '../../../core/widget/app_ui.dart';
 import '../../product/provider/product_provider.dart';
 import '../provider/seller_provider.dart';
@@ -87,7 +88,7 @@ class _SellerProductFormScreenState
               : Form(
                   key: formKey,
                   child: ListView(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(AppSpace.lg),
                     children: [
                       TextFormField(
                         controller: name,
@@ -101,7 +102,7 @@ class _SellerProductFormScreenState
                                     'กรุณากรอกชื่อสินค้า')
                                 : null,
                       ),
-                      const SizedBox(height: 12),
+                      AppSpace.gapMd,
                       TextFormField(
                         controller: description,
                         minLines: 3,
@@ -117,7 +118,7 @@ class _SellerProductFormScreenState
                                 'กรุณาอธิบายสินค้าอย่างน้อย 10 ตัวอักษร')
                             : null,
                       ),
-                      const SizedBox(height: 12),
+                      AppSpace.gapMd,
                       TextFormField(
                         controller: price,
                         keyboardType: const TextInputType.numberWithOptions(
@@ -144,7 +145,7 @@ class _SellerProductFormScreenState
                           return null;
                         },
                       ),
-                      const SizedBox(height: 12),
+                      AppSpace.gapMd,
                       TextFormField(
                         controller: stock,
                         keyboardType: TextInputType.number,
@@ -169,7 +170,7 @@ class _SellerProductFormScreenState
                           return null;
                         },
                       ),
-                      const SizedBox(height: 12),
+                      AppSpace.gapMd,
                       DropdownButtonFormField<String>(
                         initialValue: category,
                         items: categories
@@ -188,7 +189,7 @@ class _SellerProductFormScreenState
                               .textTheme
                               .titleMedium
                               ?.copyWith(fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 8),
+                      AppSpace.gapSm,
                       if (images.isEmpty)
                         AppEmptyState(
                           icon: Icons.add_photo_alternate_outlined,
@@ -229,7 +230,7 @@ class _SellerProductFormScreenState
                             ),
                           ),
                         ),
-                      const SizedBox(height: 12),
+                      AppSpace.gapMd,
                       Row(
                         children: [
                           Expanded(
@@ -239,7 +240,7 @@ class _SellerProductFormScreenState
                                   icon:
                                       const Icon(Icons.photo_library_outlined),
                                   label: Text(tr(ref, 'Gallery', 'แกลเลอรี')))),
-                          const SizedBox(width: 12),
+                          AppSpace.gapMd,
                           Expanded(
                               child: OutlinedButton.icon(
                                   onPressed: () =>

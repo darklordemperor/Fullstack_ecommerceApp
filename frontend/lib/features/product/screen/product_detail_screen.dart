@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/responsive.dart';
 import '../../../core/settings/app_settings.dart';
-import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_dimens.dart';
 import '../../../core/widget/app_ui.dart';
 import '../../cart/provider/cart_provider.dart';
 import '../provider/product_provider.dart';
@@ -37,7 +38,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
-                  border: const Border(top: BorderSide(color: AppTheme.line)),
+                  border: Border(
+                      top: BorderSide(
+                          color: Theme.of(context).colorScheme.outlineVariant)),
                   boxShadow: const [
                     BoxShadow(
                       color: Color(0x14000000),
@@ -75,188 +78,199 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 ),
               ),
             ),
-      body: product.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => AppErrorState(
-            message: friendlyError(e),
-            onRetry: () => ref.invalidate(productDetailProvider(widget.id))),
-        data: (item) {
-          final images = item.images.isEmpty ? [item.mainImage] : item.images;
-          return ListView(
-            padding: const EdgeInsets.only(bottom: 20),
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
-                child: Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(26),
-                      child: AspectRatio(
-                        aspectRatio: 4 / 3,
-                        child: PageView.builder(
-                          itemCount: images.length,
-                          onPageChanged: (value) =>
-                              setState(() => page = value),
-                          itemBuilder: (_, i) =>
-                              AppProductImage(image: images[i]),
+      body: ResponsiveCenter(
+        child: product.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => AppErrorState(
+              message: friendlyError(e),
+              onRetry: () => ref.invalidate(productDetailProvider(widget.id))),
+          data: (item) {
+            final images = item.images.isEmpty ? [item.mainImage] : item.images;
+            return ListView(
+              padding: const EdgeInsets.only(bottom: 20),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+                  child: Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(26),
+                        child: AspectRatio(
+                          aspectRatio: 4 / 3,
+                          child: PageView.builder(
+                            itemCount: images.length,
+                            onPageChanged: (value) =>
+                                setState(() => page = value),
+                            itemBuilder: (_, i) =>
+                                AppProductImage(image: images[i]),
+                          ),
                         ),
                       ),
-                    ),
-                    Positioned(
-                      right: 12,
-                      bottom: 12,
-                      child: _ImageCounter(
-                        current: page + 1,
-                        total: images.length,
+                      Positioned(
+                        right: 12,
+                        bottom: 12,
+                        child: _ImageCounter(
+                          current: page + 1,
+                          total: images.length,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              if (images.length > 1)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    images.length,
-                    (i) => AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      width: i == page ? 18 : 7,
-                      height: 7,
-                      margin: const EdgeInsets.symmetric(horizontal: 3),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(999),
-                        color: i == page ? AppTheme.primary : AppTheme.line,
+                if (images.length > 1)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(
+                      images.length,
+                      (i) => AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        width: i == page ? 18 : 7,
+                        height: 7,
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        decoration: BoxDecoration(
+                          borderRadius: AppRadius.brPill,
+                          color: i == page
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.outlineVariant,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(item.name,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(item.name,
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      Text(
+                        NumberFormat.currency(
+                                locale: moneyLocale(ref), symbol: '\u0E3F')
+                            .format(item.price),
                         style: Theme.of(context)
                             .textTheme
                             .headlineSmall
-                            ?.copyWith(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    Text(
-                      NumberFormat.currency(
-                              locale: moneyLocale(ref), symbol: '\u0E3F')
-                          .format(item.price),
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineSmall
-                          ?.copyWith(
-                              color: AppTheme.primary,
-                              fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 16),
-                    AppInfoPanel(
-                      child: Row(
+                            ?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 16),
+                      AppInfoPanel(
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                                backgroundColor: Theme.of(context)
+                                    .colorScheme
+                                    .primary
+                                    .withValues(alpha: .12),
+                                child: Text(
+                                  item.sellerName.isNotEmpty
+                                      ? item.sellerName[0].toUpperCase()
+                                      : 'S',
+                                  style: TextStyle(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary),
+                                )),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(item.sellerName,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w800)),
+                            ),
+                            _MetaChip(
+                              icon: Icons.inventory_2_outlined,
+                              label:
+                                  '${tr(ref, 'Stock', 'คงเหลือ')} ${item.stock}',
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
                         children: [
-                          CircleAvatar(
-                              backgroundColor:
-                                  AppTheme.primary.withValues(alpha: .12),
-                              child: Text(
-                                item.sellerName.isNotEmpty
-                                    ? item.sellerName[0].toUpperCase()
-                                    : 'S',
-                                style: const TextStyle(
-                                    color: AppTheme.primaryDark),
-                              )),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(item.sellerName,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w800)),
+                          _QuantityStepper(
+                            value: quantity,
+                            canDecrease: quantity > 1,
+                            canIncrease: quantity < item.stock && quantity < 99,
+                            onDecrease: () => setState(() => quantity--),
+                            onIncrease: () => setState(() => quantity++),
                           ),
+                          const Spacer(),
                           _MetaChip(
-                            icon: Icons.inventory_2_outlined,
-                            label:
-                                '${tr(ref, 'Stock', 'คงเหลือ')} ${item.stock}',
+                            icon: Icons.category_outlined,
+                            label: categoryLabel(ref, item.category),
+                            highlighted: true,
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        _QuantityStepper(
-                          value: quantity,
-                          canDecrease: quantity > 1,
-                          canIncrease: quantity < item.stock && quantity < 99,
-                          onDecrease: () => setState(() => quantity--),
-                          onIncrease: () => setState(() => quantity++),
+                      const SizedBox(height: 18),
+                      AppInfoPanel(
+                        padding: const EdgeInsets.all(18),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .primary
+                                        .withValues(alpha: .10),
+                                    borderRadius: AppRadius.brMd,
+                                  ),
+                                  child: Icon(
+                                    Icons.notes_rounded,
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  tr(ref, 'Description', 'รายละเอียด'),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.w900),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            Text(
+                              item.description.trim().isEmpty
+                                  ? tr(
+                                      ref,
+                                      'No product description has been added yet.',
+                                      'ยังไม่มีรายละเอียดสินค้า')
+                                  : item.description.trim(),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
+                                    height: 1.55,
+                                    fontSize: 15,
+                                  ),
+                            ),
+                          ],
                         ),
-                        const Spacer(),
-                        _MetaChip(
-                          icon: Icons.category_outlined,
-                          label: categoryLabel(ref, item.category),
-                          highlighted: true,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-                    AppInfoPanel(
-                      padding: const EdgeInsets.all(18),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color:
-                                      AppTheme.primary.withValues(alpha: .10),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Icon(
-                                  Icons.notes_rounded,
-                                  color: AppTheme.primaryDark,
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                tr(ref, 'Description', 'รายละเอียด'),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.w900),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-                          Text(
-                            item.description.trim().isEmpty
-                                ? tr(
-                                    ref,
-                                    'No product description has been added yet.',
-                                    'ยังไม่มีรายละเอียดสินค้า')
-                                : item.description.trim(),
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  color:
-                                      Theme.of(context).colorScheme.onSurface,
-                                  height: 1.55,
-                                  fontSize: 15,
-                                ),
-                          ),
-                        ],
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -274,7 +288,7 @@ class _ImageCounter extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: .55),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppRadius.brPill,
       ),
       child: Text(
         '$current/$total',
@@ -302,14 +316,16 @@ class _MetaChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final color = highlighted ? AppTheme.primaryDark : colors.onSurfaceVariant;
+    final color = highlighted
+        ? Theme.of(context).colorScheme.primary
+        : colors.onSurfaceVariant;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
         color: highlighted
-            ? AppTheme.primary.withValues(alpha: .10)
+            ? Theme.of(context).colorScheme.primary.withValues(alpha: .10)
             : colors.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppRadius.brPill,
         border: Border.all(color: colors.outlineVariant),
       ),
       child: Row(
@@ -352,7 +368,7 @@ class _QuantityStepper extends StatelessWidget {
       height: 50,
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: AppRadius.brLg,
         border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Row(

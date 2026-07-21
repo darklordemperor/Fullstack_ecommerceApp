@@ -1,0 +1,52 @@
+name: backend
+
+on:
+  push:
+    branches: [main]
+    paths: ['backend/**', '.github/workflows/backend.yml']
+  pull_request:
+    paths: ['backend/**', '.github/workflows/backend.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  # Blocking gate: everything here is verified to pass locally.
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - name: Format check
+        working-directory: backend
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "These files are not gofmt-clean:"; echo "$unformatted"; exit 1
+          fi
+      - name: Vet
+        working-directory: backend
+        run: go vet ./...
+      - name: Build
+        working-directory: backend
+        run: go build ./...
+      - name: Test (race + coverage)
+        working-directory: backend
+        run: go test -race -covermode=atomic -coverprofile=coverage.out ./...
+
+  # Advisory gate: does not fail the pipeline until the ruleset is confirmed.
+  lint:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+      - uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: backend

@@ -3,62 +3,42 @@ package handler
 import (
 	"net/http"
 
-	"ecommerce/backend/internal/repository"
+	"ecommerce/backend/internal/httpx"
+	"ecommerce/backend/internal/usecase"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type AdminHandler struct {
-	users    *repository.UserRepository
-	products *repository.ProductRepository
-	orders   *repository.OrderRepository
+	admin *usecase.AdminUsecase
 }
 
-func NewAdminHandler(users *repository.UserRepository, products *repository.ProductRepository, orders *repository.OrderRepository) *AdminHandler {
-	return &AdminHandler{users: users, products: products, orders: orders}
+func NewAdminHandler(admin *usecase.AdminUsecase) *AdminHandler {
+	return &AdminHandler{admin: admin}
 }
 
 func (h *AdminHandler) Stats(c *gin.Context) {
-	users, err := h.users.FindAll(c.Request.Context())
+	stats, err := h.admin.Stats(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load users"})
+		respondError(c, err)
 		return
 	}
-	products, err := h.products.FindAllAdmin(c.Request.Context())
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load products"})
-		return
-	}
-	orders, err := h.orders.FindAll(c.Request.Context())
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load orders"})
-		return
-	}
-	revenue := 0.0
-	for _, order := range orders {
-		revenue += order.Total
-	}
-	c.JSON(http.StatusOK, gin.H{"data": gin.H{
-		"total_users":    len(users),
-		"total_products": len(products),
-		"total_orders":   len(orders),
-		"total_revenue":  revenue,
-	}, "message": "admin stats loaded"})
+	c.JSON(http.StatusOK, gin.H{"data": stats, "message": "admin stats loaded"})
 }
 
 func (h *AdminHandler) Users(c *gin.Context) {
-	users, err := h.users.FindAll(c.Request.Context())
+	users, err := h.admin.Users(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load users"})
+		respondError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"data": users, "message": "users loaded"})
 }
 
 func (h *AdminHandler) Products(c *gin.Context) {
-	products, err := h.products.FindAllAdmin(c.Request.Context())
+	products, err := h.admin.Products(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load products"})
+		respondError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"data": products, "message": "products loaded"})
@@ -67,18 +47,18 @@ func (h *AdminHandler) Products(c *gin.Context) {
 func (h *AdminHandler) SetUserBanned(c *gin.Context) {
 	id, err := bson.ObjectIDFromHex(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		httpx.Error(c, http.StatusBadRequest, httpx.CodeBadRequest, "invalid user id")
 		return
 	}
 	var req struct {
 		Banned bool `json:"banned"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		httpx.Error(c, http.StatusBadRequest, httpx.CodeBadRequest, "invalid request body")
 		return
 	}
-	if err := h.users.SetBanned(c.Request.Context(), id, req.Banned); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update user"})
+	if err := h.admin.SetUserBanned(c.Request.Context(), id, req.Banned); err != nil {
+		respondError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"data": gin.H{"user_id": id.Hex(), "banned": req.Banned}, "message": "user updated"})
@@ -87,16 +67,11 @@ func (h *AdminHandler) SetUserBanned(c *gin.Context) {
 func (h *AdminHandler) DeleteProduct(c *gin.Context) {
 	id, err := bson.ObjectIDFromHex(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid product id"})
+		httpx.Error(c, http.StatusBadRequest, httpx.CodeBadRequest, "invalid product id")
 		return
 	}
-	deleted, err := h.products.DeleteAny(c.Request.Context(), id)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete product"})
-		return
-	}
-	if !deleted {
-		c.JSON(http.StatusNotFound, gin.H{"error": "product not found"})
+	if err := h.admin.DeleteProduct(c.Request.Context(), id); err != nil {
+		respondError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"data": nil, "message": "product deleted"})

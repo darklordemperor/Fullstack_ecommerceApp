@@ -1,7 +1,6 @@
-import 'package:dio/dio.dart';
+import 'package:ecommerce_frontend/features/auth/domain/repositories/auth_repository.dart';
 import 'package:ecommerce_frontend/features/auth/model/user_model.dart';
 import 'package:ecommerce_frontend/features/auth/provider/auth_provider.dart';
-import 'package:ecommerce_frontend/features/auth/repository/auth_repository.dart';
 import 'package:ecommerce_frontend/features/profile/screen/seller_apply_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -51,9 +50,7 @@ void main() {
   });
 }
 
-class _SellerApplyRepository extends AuthRepository {
-  _SellerApplyRepository() : super(Dio());
-
+class _SellerApplyRepository implements AuthRepository {
   @override
   Future<void> applySeller(
     String shopName,
@@ -74,4 +71,20 @@ class _SellerApplyRepository extends AuthRepository {
       sellerStatus: 'pending',
     );
   }
+
+  @override
+  Future<({String token, String refreshToken, UserModel user})> login(
+          String email, String password) =>
+      throw UnimplementedError();
+
+  @override
+  Future<UserModel> register(Map<String, dynamic> body) =>
+      throw UnimplementedError();
+
+  @override
+  Future<UserModel> updateProfile(Map<String, dynamic> body) =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> logout(String refreshToken) => throw UnimplementedError();
 }

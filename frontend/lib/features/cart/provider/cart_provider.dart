@@ -1,11 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/dio_provider.dart';
+import '../data/repositories/cart_repository_impl.dart';
+import '../domain/repositories/cart_repository.dart';
 import '../model/cart_model.dart';
-import '../repository/cart_repository.dart';
 
-final cartRepositoryProvider =
-    Provider<CartRepository>((ref) => CartRepository(ref.watch(dioProvider)));
+final cartRepositoryProvider = Provider<CartRepository>(
+    (ref) => CartRepositoryImpl(ref.watch(dioProvider)));
 
 /// Owns all cart mutations so widgets never talk to the repository directly.
 ///

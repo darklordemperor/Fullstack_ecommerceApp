@@ -5,54 +5,37 @@ import (
 	"regexp"
 	"strings"
 
-	"ecommerce/backend/internal/middleware"
+	"ecommerce/backend/internal/httpx"
 	"ecommerce/backend/internal/model"
-	"ecommerce/backend/internal/repository"
+	"ecommerce/backend/internal/usecase"
 	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
 )
 
+// AuthHandler is a thin delivery adapter: it decodes the request, validates its
+// shape, delegates business rules to the usecase, and maps the result (or a
+// domain error) to an HTTP response. It holds no business logic itself.
 type AuthHandler struct {
-	users     *repository.UserRepository
-	jwtSecret string
+	auth *usecase.AuthUsecase
 }
 
-func NewAuthHandler(users *repository.UserRepository, jwtSecret string) *AuthHandler {
-	return &AuthHandler{users: users, jwtSecret: jwtSecret}
+func NewAuthHandler(auth *usecase.AuthUsecase) *AuthHandler {
+	return &AuthHandler{auth: auth}
 }
 
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req model.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		httpx.Error(c, http.StatusBadRequest, httpx.CodeBadRequest, "invalid request body")
 		return
 	}
 	if errorsMap := validateRegister(req); len(errorsMap) > 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": errorsMap})
+		httpx.ValidationError(c, errorsMap)
 		return
 	}
-	existing, err := h.users.FindByEmail(c.Request.Context(), req.Email)
+
+	user, err := h.auth.Register(c.Request.Context(), req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check email"})
-		return
-	}
-	if existing != nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "email already registered"})
-		return
-	}
-	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
-		return
-	}
-	user := &model.User{
-		Name: strings.TrimSpace(req.Name), Lastname: strings.TrimSpace(req.Lastname),
-		Age: req.Age, Gender: strings.TrimSpace(req.Gender), Address: strings.TrimSpace(req.Address),
-		ProfileImage: strings.TrimSpace(req.ProfileImage), Email: strings.ToLower(strings.TrimSpace(req.Email)),
-		Password: string(hash), Role: []string{"customer"},
-	}
-	if err := h.users.Create(c.Request.Context(), user); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
+		respondError(c, err)
 		return
 	}
 	c.JSON(http.StatusCreated, gin.H{"data": user, "message": "user registered successfully"})
@@ -61,28 +44,55 @@ func (h *AuthHandler) Register(c *gin.Context) {
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req model.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		httpx.Error(c, http.StatusBadRequest, httpx.CodeBadRequest, "invalid request body")
 		return
 	}
-	user, err := h.users.FindByEmail(c.Request.Context(), req.Email)
+
+	tokens, user, err := h.auth.Login(c.Request.Context(), req.Email, req.Password)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load user"})
+		respondError(c, err)
 		return
 	}
-	if user == nil || bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)) != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid email or password"})
+	c.JSON(http.StatusOK, gin.H{
+		"data":    gin.H{"token": tokens.Access, "refresh_token": tokens.Refresh, "user": user},
+		"message": "login successful",
+	})
+}
+
+// Refresh exchanges a valid refresh token for a new access + refresh pair.
+func (h *AuthHandler) Refresh(c *gin.Context) {
+	var req struct {
+		RefreshToken string `json:"refresh_token"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.RefreshToken) == "" {
+		httpx.Error(c, http.StatusBadRequest, httpx.CodeBadRequest, "refresh_token is required")
 		return
 	}
-	if user.Banned {
-		c.JSON(http.StatusForbidden, gin.H{"error": "this account has been banned"})
-		return
-	}
-	token, err := middleware.GenerateToken(h.jwtSecret, user.ID.Hex(), user.Email, user.Role)
+	tokens, user, err := h.auth.Refresh(c.Request.Context(), req.RefreshToken)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
+		respondError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": gin.H{"token": token, "user": user}, "message": "login successful"})
+	c.JSON(http.StatusOK, gin.H{
+		"data":    gin.H{"token": tokens.Access, "refresh_token": tokens.Refresh, "user": user},
+		"message": "token refreshed",
+	})
+}
+
+// Logout revokes the given refresh token. A missing token is a no-op success so
+// the client can always clear local state.
+func (h *AuthHandler) Logout(c *gin.Context) {
+	var req struct {
+		RefreshToken string `json:"refresh_token"`
+	}
+	_ = c.ShouldBindJSON(&req)
+	if strings.TrimSpace(req.RefreshToken) != "" {
+		if err := h.auth.Logout(c.Request.Context(), req.RefreshToken); err != nil {
+			respondError(c, err)
+			return
+		}
+	}
+	c.JSON(http.StatusOK, gin.H{"data": nil, "message": "logged out"})
 }
 
 func validateRegister(req model.RegisterRequest) map[string]string {

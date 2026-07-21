@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/settings/app_settings.dart';
+import '../../../core/theme/app_dimens.dart';
 import '../../../core/widget/app_ui.dart';
 import '../../auth/provider/auth_provider.dart';
 
@@ -19,33 +20,43 @@ class _SellerApplyScreenState extends ConsumerState<SellerApplyScreen> {
   final tax = TextEditingController();
 
   @override
+  void dispose() {
+    shop.dispose();
+    location.dispose();
+    tax.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
           leading: const AppBackButton(fallback: '/profile'),
           title: Text(tr(ref, 'Apply as Seller', 'สมัครเป็นผู้ขาย'))),
-      body: ListView(padding: const EdgeInsets.all(16), children: [
+      body: ListView(padding: const EdgeInsets.all(AppSpace.lg), children: [
         TextField(
             controller: shop,
+            textInputAction: TextInputAction.next,
             decoration:
                 InputDecoration(labelText: tr(ref, 'Shop Name', 'ชื่อร้าน'))),
-        const SizedBox(height: 12),
+        AppSpace.gapMd,
         TextField(
             controller: location,
+            textInputAction: TextInputAction.next,
             decoration: InputDecoration(
                 labelText: tr(ref, 'Shop Location', 'ที่ตั้งร้าน'))),
-        const SizedBox(height: 12),
+        AppSpace.gapMd,
         TextField(
             controller: tax,
             decoration: InputDecoration(
                 labelText:
                     tr(ref, 'Tax Payer Number', 'เลขประจำตัวผู้เสียภาษี'))),
-        const SizedBox(height: 12),
+        AppSpace.gapMd,
         Text(tr(
             ref,
             'Your application will be reviewed. This is for verification purposes.',
             'ใบสมัครของคุณจะถูกตรวจสอบเพื่อยืนยันข้อมูลผู้ขาย')),
-        const SizedBox(height: 20),
+        AppSpace.gapLg,
         ElevatedButton(
             onPressed: () async {
               await ref

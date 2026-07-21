@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/settings/app_settings.dart';
-import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_dimens.dart';
 import '../provider/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -19,6 +19,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final email = TextEditingController();
   final password = TextEditingController();
   final formKey = GlobalKey<FormState>();
+  bool _obscurePassword = true;
+
+  @override
+  void dispose() {
+    email.dispose();
+    password.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,68 +36,88 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             .showSnackBar(SnackBar(content: Text(next)));
       }
     });
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     final loading = ref.watch(authProvider).loading;
     return Scaffold(
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 420),
           child: Card(
-            margin: const EdgeInsets.all(20),
+            margin: const EdgeInsets.all(AppSpace.lg),
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(AppSpace.xl),
               child: Form(
                 key: formKey,
-                child: ListView(
-                  shrinkWrap: true,
-                  children: [
-                    const Icon(Icons.shopping_bag_rounded,
-                        color: AppTheme.primary, size: 42),
-                    const SizedBox(height: 14),
-                    Text(tr(ref, 'Welcome back', 'ยินดีต้อนรับกลับ'),
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.headlineMedium),
-                    const SizedBox(height: 6),
-                    Text(
-                        tr(ref, 'Sign in to continue shopping.',
-                            'เข้าสู่ระบบเพื่อเลือกซื้อสินค้าต่อ'),
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppTheme.subtext,
-                            )),
-                    const SizedBox(height: 24),
-                    TextFormField(
-                        controller: email,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: InputDecoration(
-                            labelText: tr(ref, 'Email', 'อีเมล'),
-                            prefixIcon: const Icon(Icons.mail_outline_rounded)),
-                        validator: (value) => requiredField(
-                            value, tr(ref, 'Required', 'จำเป็นต้องกรอก'))),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                        controller: password,
-                        obscureText: true,
-                        decoration: InputDecoration(
-                            labelText: tr(ref, 'Password', 'รหัสผ่าน'),
-                            prefixIcon: const Icon(Icons.lock_outline_rounded)),
-                        validator: (value) => requiredField(
-                            value, tr(ref, 'Required', 'จำเป็นต้องกรอก'))),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                        onPressed: loading ? null : submit,
-                        child: Text(loading
-                            ? tr(ref, 'Signing in...', 'กำลังเข้าสู่ระบบ...')
-                            : tr(ref, 'Login', 'เข้าสู่ระบบ'))),
-                    TextButton(
-                        onPressed: () {
-                          final next = GoRouterState.of(context)
-                              .uri
-                              .queryParameters['next'];
-                          context.go(registerLocationFor(next));
-                        },
-                        child: Text(tr(ref, "Don't have an account? Register",
-                            'ยังไม่มีบัญชี? สมัครสมาชิก'))),
-                  ],
+                child: AutofillGroup(
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: [
+                      Icon(Icons.shopping_bag_rounded,
+                          color: colors.primary, size: 42),
+                      AppSpace.gapMd,
+                      Text(tr(ref, 'Welcome back', 'ยินดีต้อนรับกลับ'),
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.headlineMedium),
+                      AppSpace.gapSm,
+                      Text(
+                          tr(ref, 'Sign in to continue shopping.',
+                              'เข้าสู่ระบบเพื่อเลือกซื้อสินค้าต่อ'),
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyMedium
+                              ?.copyWith(color: colors.onSurfaceVariant)),
+                      AppSpace.gapXl,
+                      TextFormField(
+                          controller: email,
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          autofillHints: const [AutofillHints.email],
+                          decoration: InputDecoration(
+                              labelText: tr(ref, 'Email', 'อีเมล'),
+                              prefixIcon:
+                                  const Icon(Icons.mail_outline_rounded)),
+                          validator: (value) => requiredField(
+                              value, tr(ref, 'Required', 'จำเป็นต้องกรอก'))),
+                      AppSpace.gapMd,
+                      TextFormField(
+                          controller: password,
+                          obscureText: _obscurePassword,
+                          textInputAction: TextInputAction.done,
+                          autofillHints: const [AutofillHints.password],
+                          onFieldSubmitted: loading ? null : (_) => submit(),
+                          decoration: InputDecoration(
+                              labelText: tr(ref, 'Password', 'รหัสผ่าน'),
+                              prefixIcon:
+                                  const Icon(Icons.lock_outline_rounded),
+                              suffixIcon: IconButton(
+                                tooltip: _obscurePassword
+                                    ? tr(ref, 'Show password', 'แสดงรหัสผ่าน')
+                                    : tr(ref, 'Hide password', 'ซ่อนรหัสผ่าน'),
+                                icon: Icon(_obscurePassword
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined),
+                                onPressed: () => setState(
+                                    () => _obscurePassword = !_obscurePassword),
+                              )),
+                          validator: (value) => requiredField(
+                              value, tr(ref, 'Required', 'จำเป็นต้องกรอก'))),
+                      AppSpace.gapLg,
+                      ElevatedButton(
+                          onPressed: loading ? null : submit,
+                          child: Text(loading
+                              ? tr(ref, 'Signing in...', 'กำลังเข้าสู่ระบบ...')
+                              : tr(ref, 'Login', 'เข้าสู่ระบบ'))),
+                      TextButton(
+                          onPressed: () {
+                            final next = GoRouterState.of(context)
+                                .uri
+                                .queryParameters['next'];
+                            context.go(registerLocationFor(next));
+                          },
+                          child: Text(tr(ref, "Don't have an account? Register",
+                              'ยังไม่มีบัญชี? สมัครสมาชิก'))),
+                    ],
+                  ),
                 ),
               ),
             ),

@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/settings/app_settings.dart';
+import '../../../core/theme/app_dimens.dart';
 import '../../../core/widget/app_ui.dart';
 import '../../auth/provider/auth_provider.dart';
 
@@ -56,7 +57,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           leading: const AppBackButton(),
           title: Text(tr(ref, 'Profile', 'โปรไฟล์'))),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpace.lg),
         children: [
           Center(
             child: Stack(
@@ -84,12 +85,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          AppSpace.gapMd,
           Center(
               child: Text(user.fullName,
                   style: Theme.of(context).textTheme.titleLarge)),
           Center(child: Text(user.email)),
-          const SizedBox(height: 12),
+          AppSpace.gapMd,
           Wrap(
               spacing: 8,
               alignment: WrapAlignment.center,
@@ -97,24 +98,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   .map((r) => Chip(label: Text(roleLabel(ref, r))))
                   .toList()),
           if (editing) ...[
-            const SizedBox(height: 16),
+            AppSpace.gapLg,
             TextField(
                 controller: name,
                 decoration:
                     InputDecoration(labelText: tr(ref, 'Name', 'ชื่อ'))),
-            const SizedBox(height: 8),
+            AppSpace.gapSm,
             TextField(
                 controller: lastname,
                 decoration:
                     InputDecoration(labelText: tr(ref, 'Lastname', 'นามสกุล'))),
-            const SizedBox(height: 8),
+            AppSpace.gapSm,
             TextField(
               controller: age,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: InputDecoration(labelText: tr(ref, 'Age', 'อายุ')),
             ),
-            const SizedBox(height: 8),
+            AppSpace.gapSm,
             DropdownButtonFormField<String>(
               initialValue: gender,
               decoration: InputDecoration(labelText: tr(ref, 'Gender', 'เพศ')),
@@ -124,7 +125,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   .toList(),
               onChanged: (value) => setState(() => gender = value ?? gender),
             ),
-            const SizedBox(height: 8),
+            AppSpace.gapSm,
             TextField(
               controller: address,
               minLines: 2,
@@ -132,12 +133,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               decoration: InputDecoration(
                   labelText: tr(ref, 'Delivery address', 'ที่อยู่จัดส่ง')),
             ),
-            const SizedBox(height: 12),
+            AppSpace.gapMd,
             ElevatedButton(
                 onPressed: saveProfile,
                 child: Text(tr(ref, 'Save Profile', 'บันทึกโปรไฟล์'))),
           ] else ...[
-            const SizedBox(height: 16),
+            AppSpace.gapLg,
             _InfoTile(
                 icon: Icons.cake_outlined,
                 label: tr(ref, 'Age', 'อายุ'),
@@ -154,7 +155,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 value: user.address?.isNotEmpty == true
                     ? user.address!
                     : tr(ref, 'Not set', 'ยังไม่ได้ตั้งค่า')),
-            const SizedBox(height: 16),
+            AppSpace.gapLg,
             ElevatedButton(
                 onPressed: () => setState(() => editing = true),
                 child: Text(tr(ref, 'Edit Profile', 'แก้ไขโปรไฟล์'))),
@@ -168,7 +169,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 child: Chip(
                     label: Text(tr(ref, 'Seller application pending',
                         'ใบสมัครผู้ขายรอตรวจสอบ')))),
-          const SizedBox(height: 24),
+          AppSpace.gapXl,
           OutlinedButton(
             onPressed: () async {
               await ref.read(authProvider.notifier).logout();

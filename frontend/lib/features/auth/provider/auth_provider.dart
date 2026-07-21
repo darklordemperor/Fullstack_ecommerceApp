@@ -6,11 +6,16 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../../core/network/dio_provider.dart';
 import '../../../core/utils/jwt.dart';
+import '../data/repositories/auth_repository_impl.dart';
+import '../domain/repositories/auth_repository.dart';
+import '../domain/usecases/auth_usecases.dart';
 import '../model/user_model.dart';
-import '../repository/auth_repository.dart';
 
+/// Binds the [AuthRepository] contract to its Dio-backed implementation.
+/// Overriding this provider (with a fake) in a test re-routes the whole auth
+/// flow, since every use case is built from it.
 final authRepositoryProvider =
-    Provider<AuthRepository>((ref) => AuthRepository(ref.watch(dioProvider)));
+    Provider<AuthRepository>((ref) => AuthRepositoryImpl(ref.watch(dioProvider)));
 
 /// Session state modeled as a sealed hierarchy so impossible combinations
 /// (e.g. "loading and errored at the same time") cannot be represented.
@@ -71,6 +76,13 @@ class AuthNotifier extends Notifier<AuthState> {
   AuthRepository get _repository => ref.read(authRepositoryProvider);
   FlutterSecureStorage get _storage => ref.read(secureStorageProvider);
 
+  // Use cases wrap the repository so this view model stays a thin coordinator
+  // of state transitions rather than a home for business flow.
+  LoginUseCase get _login => LoginUseCase(_repository);
+  RegisterUseCase get _register => RegisterUseCase(_repository);
+  GetCurrentUserUseCase get _getCurrentUser => GetCurrentUserUseCase(_repository);
+  UpdateProfileUseCase get _updateProfile => UpdateProfileUseCase(_repository);
+
   @override
   AuthState build() {
     unawaited(_bootstrap());
@@ -82,6 +94,7 @@ class AuthNotifier extends Notifier<AuthState> {
   /// finishes first is never overwritten.
   Future<void> _bootstrap() async {
     final token = await _storage.read(key: StorageKeys.token);
+    final refreshToken = await _storage.read(key: StorageKeys.refreshToken);
     final storedMessage = await _storage.read(key: StorageKeys.authMessage);
     if (storedMessage != null) {
       await _storage.delete(key: StorageKeys.authMessage);
@@ -90,18 +103,22 @@ class AuthNotifier extends Notifier<AuthState> {
       _finishBootstrap(Unauthenticated(message: storedMessage));
       return;
     }
-    if (isJwtExpired(token)) {
-      await _storage.delete(key: StorageKeys.token);
+    // A locally-expired access token is only fatal when there is no refresh
+    // token to renew it; otherwise the /me call below refreshes transparently
+    // via the network interceptor.
+    final hasRefresh = refreshToken != null && refreshToken.isNotEmpty;
+    if (isJwtExpired(token) && !hasRefresh) {
+      await _clearTokens();
       _finishBootstrap(const Unauthenticated(
           message: 'Your session expired. Please sign in again.'));
       return;
     }
     try {
-      final user = await _repository.me();
+      final user = await _getCurrentUser();
       _finishBootstrap(Authenticated(user));
     } on Exception catch (error) {
       log('Auth bootstrap failed', name: 'auth', error: error);
-      await _storage.delete(key: StorageKeys.token);
+      await _clearTokens();
       _finishBootstrap(const Unauthenticated(
           message: 'We could not restore your session. Please sign in again.'));
     }
@@ -111,12 +128,24 @@ class AuthNotifier extends Notifier<AuthState> {
     if (state is AuthInitial) state = result;
   }
 
+  Future<void> _persistTokens(String token, String refreshToken) async {
+    await _storage.write(key: StorageKeys.token, value: token);
+    if (refreshToken.isNotEmpty) {
+      await _storage.write(key: StorageKeys.refreshToken, value: refreshToken);
+    }
+  }
+
+  Future<void> _clearTokens() async {
+    await _storage.delete(key: StorageKeys.token);
+    await _storage.delete(key: StorageKeys.refreshToken);
+  }
+
   Future<void> login(String email, String password) async {
     final previous = state;
     state = const Authenticating();
     try {
-      final result = await _repository.login(email, password);
-      await _storage.write(key: StorageKeys.token, value: result.token);
+      final result = await _login(email, password);
+      await _persistTokens(result.token, result.refreshToken);
       state = Authenticated(result.user);
     } catch (_) {
       state = previous;
@@ -128,12 +157,12 @@ class AuthNotifier extends Notifier<AuthState> {
     final previous = state;
     state = const Authenticating();
     try {
-      await _repository.register(body);
-      final result = await _repository.login(
+      await _register(body);
+      final result = await _login(
         body['email'].toString().trim(),
         body['password'].toString(),
       );
-      await _storage.write(key: StorageKeys.token, value: result.token);
+      await _persistTokens(result.token, result.refreshToken);
       state = Authenticated(result.user);
     } catch (_) {
       state = previous;
@@ -142,24 +171,32 @@ class AuthNotifier extends Notifier<AuthState> {
   }
 
   Future<void> refreshMe() async {
-    state = Authenticated(await _repository.me());
+    state = Authenticated(await _getCurrentUser());
   }
 
   Future<void> updateProfile(Map<String, dynamic> body) async {
-    state = Authenticated(await _repository.updateProfile(body));
+    state = Authenticated(await _updateProfile(body));
   }
 
   Future<void> logout({String? message}) async {
-    await _storage.delete(key: StorageKeys.token);
+    final refreshToken = await _storage.read(key: StorageKeys.refreshToken);
+    if (refreshToken != null && refreshToken.isNotEmpty) {
+      try {
+        await _repository.logout(refreshToken);
+      } catch (_) {
+        // Best-effort: always clear local state even if the server call fails.
+      }
+    }
+    await _clearTokens();
     state = Unauthenticated(message: message);
   }
 
-  /// Called by the network layer when any request receives a 401. Drops the
-  /// session so the router redirects to login. Ignored while a login attempt
-  /// is in flight — a wrong password is not an expired session.
+  /// Called by the network layer when a 401 could not be recovered by a token
+  /// refresh. Drops the session so the router redirects to login. Ignored while
+  /// a login attempt is in flight — a wrong password is not an expired session.
   void handleUnauthorized() {
     if (state is! Authenticated) return;
-    unawaited(_storage.delete(key: StorageKeys.token));
+    unawaited(_clearTokens());
     state = const Unauthenticated(
         message: 'Your session expired. Please sign in again.');
   }

@@ -3,57 +3,42 @@ package handler
 import (
 	"net/http"
 
-	"ecommerce/backend/internal/repository"
+	"ecommerce/backend/internal/usecase"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type SellerHandler struct {
-	products *repository.ProductRepository
-	orders   *repository.OrderRepository
+	seller *usecase.SellerUsecase
 }
 
-func NewSellerHandler(products *repository.ProductRepository, orders *repository.OrderRepository) *SellerHandler {
-	return &SellerHandler{products: products, orders: orders}
+func NewSellerHandler(seller *usecase.SellerUsecase) *SellerHandler {
+	return &SellerHandler{seller: seller}
 }
 
 func (h *SellerHandler) Products(c *gin.Context) {
-	products, err := h.products.FindBySeller(c.Request.Context(), c.MustGet("user_id").(bson.ObjectID))
+	products, err := h.seller.Products(c.Request.Context(), c.MustGet("user_id").(bson.ObjectID))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load seller products"})
+		respondError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"data": products, "message": "seller products loaded"})
 }
 
 func (h *SellerHandler) Orders(c *gin.Context) {
-	orders, err := h.orders.FindBySeller(c.Request.Context(), c.MustGet("user_id").(bson.ObjectID))
+	orders, err := h.seller.Orders(c.Request.Context(), c.MustGet("user_id").(bson.ObjectID))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load seller orders"})
+		respondError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"data": orders, "message": "seller orders loaded"})
 }
 
 func (h *SellerHandler) Stats(c *gin.Context) {
-	sellerID := c.MustGet("user_id").(bson.ObjectID)
-	products, err := h.products.FindBySeller(c.Request.Context(), sellerID)
+	stats, err := h.seller.Stats(c.Request.Context(), c.MustGet("user_id").(bson.ObjectID))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load seller products"})
+		respondError(c, err)
 		return
 	}
-	orders, err := h.orders.FindBySeller(c.Request.Context(), sellerID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load seller orders"})
-		return
-	}
-	revenue := 0.0
-	for _, order := range orders {
-		revenue += order.Total
-	}
-	c.JSON(http.StatusOK, gin.H{"data": gin.H{
-		"total_products": len(products),
-		"total_orders":   len(orders),
-		"total_revenue":  revenue,
-	}, "message": "seller stats loaded"})
+	c.JSON(http.StatusOK, gin.H{"data": stats, "message": "seller stats loaded"})
 }

@@ -1,4 +1,4 @@
 {
   "APP_ENV": "staging",
-  "API_BASE_URL": "https://staging-api.shopapp.example.com/api"
+  "API_BASE_URL": "https://staging-api.shopapp.example.com/api/v1"
 }

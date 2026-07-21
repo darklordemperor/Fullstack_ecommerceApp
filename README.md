@@ -24,8 +24,12 @@ docker compose up --build
 The backend listens on:
 
 ```text
-http://localhost:8080/api
+http://localhost:8080/api/v1
 ```
+
+Health and metrics endpoints live at the root (outside the version prefix and the
+rate limiter): `GET /healthz`, `GET /readyz`, `GET /metrics`. The full API contract
+is documented in [`backend/api/openapi.yaml`](backend/api/openapi.yaml).
 
 Backend defaults live in `backend/.env`:
 
@@ -67,8 +71,8 @@ npm start
 
 API base URL is platform-aware in `frontend/lib/core/constants/api_constants.dart`:
 
-- Android emulator: `http://10.0.2.2:8080/api`
-- Web, desktop, iOS simulator: `http://localhost:8080/api`
+- Android emulator: `http://10.0.2.2:8080/api/v1`
+- Web, desktop, iOS simulator: `http://localhost:8080/api/v1`
 - Physical device: replace the host with the computer LAN IP if needed.
 
 ### Environments (dev / staging / prod)
@@ -182,7 +186,7 @@ Layering rules (enforced by convention and reviewed in tests):
 ```mermaid
 flowchart TD
     Client["Flutter app\nAndroid / Web / Desktop"] --> Dio["dioProvider\nJWT bearer token interceptor"]
-    Dio --> API["Gin API\n/api"]
+    Dio --> API["Gin API\n/api/v1"]
 
     API --> Auth["/auth\nregister, login"]
     API --> Users["/users\nprofile, seller apply/approve"]
